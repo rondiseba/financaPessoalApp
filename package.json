@@ -1,0 +1,36 @@
+{
+  "name": "controle-gastos-pessoal",
+  "version": "1.0.0",
+  "description": "Aplicação completa para controle de gastos pessoais",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm run install-backend && npm run install-frontend",
+    "install-backend": "cd backend && npm install",
+    "install-frontend": "cd frontend && npm install",
+    "dev": "concurrently \"npm run dev-backend\" \"npm run dev-frontend\"",
+    "dev-backend": "cd backend && npm run dev",
+    "dev-frontend": "cd frontend && npm start",
+    "build": "npm run build-frontend",
+    "build-frontend": "cd frontend && npm run build",
+    "start": "npm run start-backend",
+    "start-backend": "cd backend && npm start",
+    "setup": "npm run install-all && npm run migrate",
+    "migrate": "cd backend && npm run migrate",
+    "studio": "cd backend && npm run studio",
+    "test": "echo \"Executar testes aqui\" && exit 0"
+  },
+  "keywords": [
+    "finance",
+    "personal",
+    "expenses",
+    "tracking",
+    "react",
+    "nodejs",
+    "sqlite"
+  ],
+  "author": "Desenvolvedor",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
