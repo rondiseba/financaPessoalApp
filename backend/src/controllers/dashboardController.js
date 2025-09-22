@@ -35,11 +35,11 @@ class DashboardController {
         recentTransactions,
         topCategories
       ] = await Promise.all([
-        this.getTotalStats(req.userId, startDate, endDate),
-        this.getCategoryStats(req.userId, startDate, endDate),
-        this.getMonthlyTrend(req.userId),
-        this.getRecentTransactions(req.userId),
-        this.getTopCategories(req.userId, startDate, endDate)
+        dashboardController.getTotalStats(req.userId, startDate, endDate),
+        dashboardController.getCategoryStats(req.userId, startDate, endDate),
+        dashboardController.getMonthlyTrend(req.userId),
+        dashboardController.getRecentTransactions(req.userId),
+        dashboardController.getTopCategories(req.userId, startDate, endDate)
       ]);
 
       res.json({
@@ -338,4 +338,5 @@ class DashboardController {
   }
 }
 
-module.exports = new DashboardController();
+const dashboardController = new DashboardController();
+module.exports = dashboardController;

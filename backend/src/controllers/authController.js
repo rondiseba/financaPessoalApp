@@ -59,7 +59,7 @@ class AuthController {
       });
 
       // Criar categorias padrão para o usuário
-      await this.createDefaultCategories(user.id);
+      await authController.createDefaultCategories(user.id);
 
       // Gerar token JWT
       const token = jwt.sign(
@@ -178,4 +178,5 @@ class AuthController {
   }
 }
 
-module.exports = new AuthController();
+const authController = new AuthController();
+module.exports = authController;

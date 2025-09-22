@@ -68,10 +68,6 @@ const Transactions = () => {
     loadCategories();
   }, []);
 
-  useEffect(() => {
-    loadTransactions();
-  }, [page, rowsPerPage, filters, loadTransactions]);
-
   const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
@@ -102,6 +98,10 @@ const Transactions = () => {
       setLoading(false);
     }
   }, [page, rowsPerPage, filters]);
+
+  useEffect(() => {
+    loadTransactions();
+  }, [loadTransactions]);
 
   const loadCategories = async () => {
     try {
