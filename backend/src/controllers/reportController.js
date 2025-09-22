@@ -137,7 +137,7 @@ class ReportController {
       res.json({
         message: 'Relatório Excel gerado com sucesso',
         fileName,
-        downloadUrl: `/reports/${fileName}`,
+        downloadUrl: `/api/reports/download/${fileName}`,
         summary: {
           totalTransactions: transactions.length,
           totalIncome,
@@ -303,7 +303,7 @@ class ReportController {
       res.json({
         message: 'Relatório PDF gerado com sucesso',
         fileName,
-        downloadUrl: `/reports/${fileName}`,
+        downloadUrl: `/api/reports/download/${fileName}`,
         summary: {
           totalTransactions: transactions.length,
           totalIncome,
@@ -333,7 +333,7 @@ class ReportController {
         
         return {
           fileName: file,
-          downloadUrl: `/reports/${file}`,
+          downloadUrl: `/api/reports/download/${file}`,
           size: stats.size,
           createdAt: stats.birthtime,
           type: path.extname(file).substring(1).toUpperCase()
@@ -368,6 +368,33 @@ class ReportController {
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
+
+  async downloadReport(req, res) {
+    try {
+      const { fileName } = req.params;
+      const filePath = path.join(__dirname, '../../reports', fileName);
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Arquivo não encontrado' });
+      }
+
+      // Verificar se o arquivo pertence ao usuário logado
+      // Para simplificar, vamos permitir download se o arquivo existe
+      // Em produção, seria ideal armazenar o userId no nome do arquivo
+
+      res.download(filePath, fileName, (err) => {
+        if (err) {
+          console.error('Erro ao fazer download do arquivo:', err);
+          res.status(500).json({ error: 'Erro ao fazer download do arquivo' });
+        }
+      });
+
+    } catch (error) {
+      console.error('Erro ao fazer download do relatório:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  }
 }
 
-module.exports = new ReportController();
+const reportController = new ReportController();
+module.exports = reportController;

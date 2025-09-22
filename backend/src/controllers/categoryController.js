@@ -293,4 +293,5 @@ class CategoryController {
   }
 }
 
-module.exports = new CategoryController();
+const categoryController = new CategoryController();
+module.exports = categoryController;

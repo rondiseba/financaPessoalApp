@@ -525,4 +525,5 @@ class TransactionController {
   }
 }
 
-module.exports = new TransactionController();
+const transactionController = new TransactionController();
+module.exports = transactionController;

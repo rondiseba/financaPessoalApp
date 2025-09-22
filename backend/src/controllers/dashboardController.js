@@ -46,7 +46,7 @@ class DashboardController {
         period: {
           startDate,
           endDate,
-          label: this.getPeriodLabel(period)
+          label: dashboardController.getPeriodLabel(period)
         },
         totalStats,
         categoryStats,

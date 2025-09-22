@@ -11,6 +11,7 @@ router.use(authMiddleware);
 router.get('/excel', reportController.generateMonthlyExcel);
 router.get('/pdf', reportController.generateMonthlyPDF);
 router.get('/list', reportController.listReports);
+router.get('/download/:fileName', reportController.downloadReport);
 router.delete('/:fileName', reportController.deleteReport);
 
 module.exports = router;
