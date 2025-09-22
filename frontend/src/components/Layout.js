@@ -3,7 +3,6 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  Button,
   IconButton,
   Menu,
   MenuItem,
@@ -27,8 +26,7 @@ import {
   Assessment,
   AccountCircle,
   Logout,
-  AccountBalanceWallet,
-  GetApp
+  AccountBalanceWallet
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services';

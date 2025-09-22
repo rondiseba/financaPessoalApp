@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -23,16 +23,14 @@ import {
   DialogContent,
   DialogActions,
   Alert,
-  Grid,
-  Fab
+  Grid
 } from '@mui/material';
 import {
   Add,
   Edit,
   Delete,
   Search,
-  FilterList,
-  GetApp
+  FilterList
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
@@ -72,9 +70,9 @@ const Transactions = () => {
 
   useEffect(() => {
     loadTransactions();
-  }, [page, rowsPerPage, filters]);
+  }, [page, rowsPerPage, filters, loadTransactions]);
 
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -103,7 +101,7 @@ const Transactions = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, rowsPerPage, filters]);
 
   const loadCategories = async () => {
     try {

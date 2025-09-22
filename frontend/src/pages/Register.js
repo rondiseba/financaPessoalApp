@@ -11,7 +11,7 @@ import {
   Avatar,
   Grid
 } from '@mui/material';
-import { PersonAdd, AccountBalanceWallet } from '@mui/icons-material';
+import { PersonAdd } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services';
 import { validateEmail, validatePassword } from '../utils/helpers';

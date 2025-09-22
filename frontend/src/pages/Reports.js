@@ -29,7 +29,7 @@ import {
   Refresh
 } from '@mui/icons-material';
 import { reportService } from '../services';
-import { formatCurrency, getCurrentMonth, getCurrentYear, getMonthName } from '../utils/helpers';
+import { getCurrentMonth, getCurrentYear, getMonthName } from '../utils/helpers';
 
 const Reports = () => {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());

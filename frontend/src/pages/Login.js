@@ -11,10 +11,10 @@ import {
   Avatar,
   Grid
 } from '@mui/material';
-import { LockOutlined, AccountBalanceWallet } from '@mui/icons-material';
+import { AccountBalanceWallet } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services';
-import { validateEmail, validatePassword } from '../utils/helpers';
+import { validateEmail } from '../utils/helpers';
 
 const Login = () => {
   const navigate = useNavigate();

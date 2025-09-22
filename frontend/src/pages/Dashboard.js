@@ -14,11 +14,9 @@ import {
   TrendingUp,
   TrendingDown,
   AccountBalance,
-  Receipt,
-  AttachMoney,
-  SavingsOutlined
+  Receipt
 } from '@mui/icons-material';
-import { Line, Doughnut, Bar } from 'react-chartjs-2';
+import { Line, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -184,7 +182,7 @@ const Dashboard = () => {
     );
   }
 
-  const { totalStats, categoryStats, recentTransactions } = dashboardData;
+  const { totalStats, recentTransactions } = dashboardData;
   const expenseChartData = getExpenseChartData();
   const trendChartData = getTrendChartData();
 
