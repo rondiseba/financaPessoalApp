@@ -41,7 +41,7 @@ class ReportController {
 
       // Criar planilha
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet(`Relatório ${month}/${year}`);
+      const worksheet = workbook.addWorksheet(`Relatorio ${month}-${year}`);
 
       // Configurar cabeçalhos
       worksheet.columns = [

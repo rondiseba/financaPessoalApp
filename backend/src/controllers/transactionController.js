@@ -57,8 +57,7 @@ class TransactionController {
 
       if (search) {
         where.description = {
-          contains: search,
-          mode: 'insensitive'
+          contains: search
         };
       }
 
