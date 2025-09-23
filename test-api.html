@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste API</title>
+</head>
+<body>
+    <h1>Teste da API</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testAPI() {
+            try {
+                console.log('Testando API...');
+                
+                // Teste de registro
+                const registerResponse = await fetch('http://localhost:3001/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'Teste Browser',
+                        email: 'browser@test.com',
+                        password: '123456'
+                    })
+                });
+                
+                console.log('Register response:', registerResponse);
+                const registerData = await registerResponse.json();
+                console.log('Register data:', registerData);
+                
+                // Teste de login
+                const loginResponse = await fetch('http://localhost:3001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'browser@test.com',
+                        password: '123456'
+                    })
+                });
+                
+                console.log('Login response:', loginResponse);
+                const loginData = await loginResponse.json();
+                console.log('Login data:', loginData);
+                
+                document.getElementById('result').innerHTML = `
+                    <h2>Resultado dos testes:</h2>
+                    <p><strong>Registro:</strong> ${registerResponse.status} - ${registerData.message}</p>
+                    <p><strong>Login:</strong> ${loginResponse.status} - ${loginData.message}</p>
+                `;
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                document.getElementById('result').innerHTML = `
+                    <h2>Erro:</h2>
+                    <p style="color: red;">${error.message}</p>
+                `;
+            }
+        }
+        
+        // Executar teste quando a página carregar
+        window.onload = testAPI;
+    </script>
+</body>
+</html>
