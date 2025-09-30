@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
+import TransactionsDebug from './pages/TransactionsDebug';
 import Reports from './pages/Reports';
 
 // Theme
@@ -75,6 +76,14 @@ function App() {
               <PrivateRoute>
                 <Layout>
                   <Transactions />
+                </Layout>
+              </PrivateRoute>
+            } />
+            
+            <Route path="/transactions-debug" element={
+              <PrivateRoute>
+                <Layout>
+                  <TransactionsDebug />
                 </Layout>
               </PrivateRoute>
             } />

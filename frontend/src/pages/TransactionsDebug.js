@@ -40,7 +40,7 @@ import { transactionService, categoryService } from '../services';
 import { formatCurrency, formatDate, getTransactionTypeLabel } from '../utils/helpers';
 import TransactionForm from '../components/TransactionForm';
 
-const Transactions = () => {
+const TransactionsDebug = () => {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,11 +58,14 @@ const Transactions = () => {
     endDate: null
   });
 
-  // Modal
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [transactionToDelete, setTransactionToDelete] = useState(null);
+  // Debug logs
+  const [debugLogs, setDebugLogs] = useState([]);
+
+  const addDebugLog = (message, data = null) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugLogs(prev => [...prev, { timestamp, message, data }]);
+    console.log(`[DEBUG ${timestamp}] ${message}`, data);
+  };
 
   useEffect(() => {
     loadCategories();
@@ -87,13 +90,21 @@ const Transactions = () => {
         params.endDate = moment(filters.endDate).format('YYYY-MM-DD');
       }
 
+      addDebugLog('Chamando API com parâmetros:', params);
+
       const response = await transactionService.getAll(params);
+      
+      addDebugLog('Resposta da API:', {
+        transactionCount: response.transactions.length,
+        totalItems: response.pagination.totalItems
+      });
+
       setTransactions(response.transactions);
       setTotalItems(response.pagination.totalItems);
 
     } catch (err) {
       setError('Erro ao carregar transações');
-      console.error('Erro ao carregar transações:', err);
+      addDebugLog('Erro ao carregar transações:', err);
     } finally {
       setLoading(false);
     }
@@ -105,24 +116,33 @@ const Transactions = () => {
 
   const loadCategories = async () => {
     try {
-      console.log('Carregando categorias...');
+      addDebugLog('Carregando categorias...');
       const response = await categoryService.getAll();
-      console.log('Categorias carregadas:', response.categories);
       setCategories(response.categories);
+      addDebugLog('Categorias carregadas:', response.categories.map(c => ({ id: c.id, name: c.name, type: c.type })));
     } catch (err) {
-      console.error('Erro ao carregar categorias:', err);
+      addDebugLog('Erro ao carregar categorias:', err);
     }
   };
 
   const handleFilterChange = (field, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    addDebugLog(`Alterando filtro ${field}:`, { field, value, previousValue: filters[field] });
+    
+    setFilters(prev => {
+      const newFilters = {
+        ...prev,
+        [field]: value
+      };
+      addDebugLog('Novos filtros:', newFilters);
+      return newFilters;
+    });
+    
     setPage(0); // Reset para primeira página quando filtrar
+    addDebugLog('Página resetada para 0');
   };
 
   const clearFilters = () => {
+    addDebugLog('Limpando filtros');
     setFilters({
       search: '',
       type: '',
@@ -133,39 +153,15 @@ const Transactions = () => {
     setPage(0);
   };
 
-  const handleEdit = (transaction) => {
-    setEditingTransaction(transaction);
-    setModalOpen(true);
-  };
-
-  const handleDelete = async () => {
-    try {
-      await transactionService.delete(transactionToDelete.id);
-      setDeleteDialogOpen(false);
-      setTransactionToDelete(null);
-      loadTransactions();
-    } catch (err) {
-      setError('Erro ao excluir transação');
-      console.error('Erro ao excluir transação:', err);
-    }
-  };
-
-  const handleModalClose = () => {
-    setModalOpen(false);
-    setEditingTransaction(null);
-  };
-
-  const handleTransactionSaved = () => {
-    handleModalClose();
-    loadTransactions();
-  };
-
   const handleChangePage = (event, newPage) => {
+    addDebugLog('Mudando página:', { from: page, to: newPage });
     setPage(newPage);
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+    const newRowsPerPage = parseInt(event.target.value, 10);
+    addDebugLog('Mudando itens por página:', { from: rowsPerPage, to: newRowsPerPage });
+    setRowsPerPage(newRowsPerPage);
     setPage(0);
   };
 
@@ -182,16 +178,34 @@ const Transactions = () => {
       <Box sx={{ p: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h4">
-            Transações
+            Transações (Debug Mode)
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setModalOpen(true)}
-          >
-            Nova Transação
-          </Button>
         </Box>
+
+        {/* Debug Panel */}
+        <Paper sx={{ p: 2, mb: 3, bgcolor: '#f5f5f5' }}>
+          <Typography variant="h6" gutterBottom>
+            Debug Information
+          </Typography>
+          <Typography variant="body2" gutterBottom>
+            Filtros Atuais: {JSON.stringify(filters)}
+          </Typography>
+          <Typography variant="body2" gutterBottom>
+            Total de Transações: {totalItems}
+          </Typography>
+          <Typography variant="body2" gutterBottom>
+            Categorias Carregadas: {categories.length}
+          </Typography>
+          
+          <Box sx={{ maxHeight: 200, overflow: 'auto', mt: 2 }}>
+            <Typography variant="subtitle2">Últimos logs:</Typography>
+            {debugLogs.slice(-10).map((log, index) => (
+              <Typography key={index} variant="caption" display="block">
+                [{log.timestamp}] {log.message} {log.data && JSON.stringify(log.data)}
+              </Typography>
+            ))}
+          </Box>
+        </Paper>
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -237,7 +251,13 @@ const Transactions = () => {
                 <InputLabel>Categoria</InputLabel>
                 <Select
                   value={filters.categoryId}
-                  onChange={(e) => handleFilterChange('categoryId', e.target.value)}
+                  onChange={(e) => {
+                    addDebugLog('Select onChange triggered:', { 
+                      value: e.target.value,
+                      categories: categories.map(c => ({ id: c.id, name: c.name }))
+                    });
+                    handleFilterChange('categoryId', e.target.value);
+                  }}
                   label="Categoria"
                 >
                   <MenuItem value="">Todas</MenuItem>
@@ -248,24 +268,6 @@ const Transactions = () => {
                   ))}
                 </Select>
               </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={2}>
-              <DatePicker
-                label="Data Inicial"
-                value={filters.startDate}
-                onChange={(date) => handleFilterChange('startDate', date)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={2}>
-              <DatePicker
-                label="Data Final"
-                value={filters.endDate}
-                onChange={(date) => handleFilterChange('endDate', date)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-              />
             </Grid>
 
             <Grid item xs={12} sm={6} md={1}>
@@ -291,19 +293,18 @@ const Transactions = () => {
                   <TableCell>Categoria</TableCell>
                   <TableCell>Tipo</TableCell>
                   <TableCell align="right">Valor</TableCell>
-                  <TableCell align="center">Ações</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={5} align="center">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 ) : transactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={5} align="center">
                       Nenhuma transação encontrada
                     </TableCell>
                   </TableRow>
@@ -342,24 +343,6 @@ const Transactions = () => {
                           {formatCurrency(transaction.amount)}
                         </Typography>
                       </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEdit(transaction)}
-                        >
-                          <Edit />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => {
-                            setTransactionToDelete(transaction);
-                            setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
-                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -378,50 +361,9 @@ const Transactions = () => {
             labelRowsPerPage="Itens por página:"
           />
         </Paper>
-
-        {/* Modal de Formulário */}
-        <Dialog
-          open={modalOpen}
-          onClose={handleModalClose}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>
-            {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
-          </DialogTitle>
-          <DialogContent>
-            <TransactionForm
-              transaction={editingTransaction}
-              categories={categories}
-              onSave={handleTransactionSaved}
-              onCancel={handleModalClose}
-            />
-          </DialogContent>
-        </Dialog>
-
-        {/* Dialog de Confirmação de Exclusão */}
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-        >
-          <DialogTitle>Confirmar Exclusão</DialogTitle>
-          <DialogContent>
-            <Typography>
-              Tem certeza que deseja excluir a transação "{transactionToDelete?.description}"?
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleDelete} color="error" variant="contained">
-              Excluir
-            </Button>
-          </DialogActions>
-        </Dialog>
       </Box>
     </LocalizationProvider>
   );
 };
 
-export default Transactions;
+export default TransactionsDebug;

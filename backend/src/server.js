@@ -52,8 +52,13 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Rota não encontrada' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}/api/health`);
-  console.log(`🗂️  Relatórios em: http://localhost:${PORT}/reports`);
-});
+// Só iniciar o servidor se não estivermos em ambiente de teste
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`📊 Dashboard: http://localhost:${PORT}/api/health`);
+    console.log(`🗂️  Relatórios em: http://localhost:${PORT}/reports`);
+  });
+}
+
+module.exports = app;
