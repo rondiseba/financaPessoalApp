@@ -134,6 +134,14 @@ const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
 
   // Filtrar categorias pelo tipo selecionado
   const filteredCategories = categories.filter(cat => cat.type === formData.type);
+  
+  // Debug: log para verificar categorias
+  console.log('Debug TransactionForm:', {
+    categories: categories.length,
+    formType: formData.type,
+    filteredCategories: filteredCategories.length,
+    categoriesData: categories.map(c => ({ id: c.id, name: c.name, type: c.type }))
+  });
 
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
@@ -213,22 +221,31 @@ const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
             label="Categoria"
             disabled={loading}
           >
-            {filteredCategories.map((category) => (
-              <MenuItem key={category.id} value={category.id}>
-                <Box display="flex" alignItems="center">
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      backgroundColor: category.color,
-                      mr: 1
-                    }}
-                  />
-                  {category.name}
-                </Box>
+            {filteredCategories.length === 0 ? (
+              <MenuItem disabled>
+                {categories.length === 0 
+                  ? 'Carregando categorias...' 
+                  : `Nenhuma categoria de ${formData.type === 'income' ? 'receita' : 'despesa'} encontrada`
+                }
               </MenuItem>
-            ))}
+            ) : (
+              filteredCategories.map((category) => (
+                <MenuItem key={category.id} value={category.id}>
+                  <Box display="flex" alignItems="center">
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: category.color,
+                        mr: 1
+                      }}
+                    />
+                    {category.name}
+                  </Box>
+                </MenuItem>
+              ))
+            )}
           </Select>
           {errors.categoryId && (
             <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5, ml: 2 }}>

@@ -34,9 +34,16 @@ export const authService = {
 
 export const categoryService = {
   async getAll(type) {
-    const params = type ? { type } : {};
-    const response = await api.get('/categories', { params });
-    return response.data;
+    try {
+      console.log('Chamando API de categorias...');
+      const params = type ? { type } : {};
+      const response = await api.get('/categories', { params });
+      console.log('Resposta da API de categorias:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erro na API de categorias:', error);
+      throw error;
+    }
   },
 
   async getById(id) {
