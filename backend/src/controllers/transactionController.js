@@ -1,10 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const Joi = require('joi');
-const moment = require('moment');
 
 const prisma = new PrismaClient();
-
-// Schemas de validação
 const transactionSchema = Joi.object({
   description: Joi.string().min(1).max(255).required(),
   amount: Joi.number().positive().required(),
@@ -40,7 +37,6 @@ class TransactionController {
         userId: req.userId
       };
 
-      // Filtros
       if (type && ['income', 'expense'].includes(type)) {
         where.type = type;
       }
@@ -139,7 +135,6 @@ class TransactionController {
 
   async create(req, res) {
     try {
-      // Validar dados de entrada
       const { error, value } = transactionSchema.validate(req.body);
       if (error) {
         return res.status(400).json({ 
@@ -149,8 +144,6 @@ class TransactionController {
       }
 
       const { description, amount, type, date, categoryId } = value;
-
-      // Verificar se categoria existe e pertence ao usuário
       const category = await prisma.category.findFirst({
         where: {
           id: categoryId,
@@ -162,7 +155,6 @@ class TransactionController {
         return res.status(404).json({ error: 'Categoria não encontrada' });
       }
 
-      // Verificar se o tipo da transação é compatível com a categoria
       if (category.type !== type) {
         return res.status(400).json({ 
           error: `Categoria selecionada é para ${category.type === 'income' ? 'receitas' : 'despesas'}, mas a transação é do tipo ${type === 'income' ? 'receita' : 'despesa'}` 
@@ -205,7 +197,6 @@ class TransactionController {
     try {
       const { id } = req.params;
 
-      // Validar dados de entrada
       const { error, value } = updateTransactionSchema.validate(req.body);
       if (error) {
         return res.status(400).json({ 
@@ -213,8 +204,6 @@ class TransactionController {
           details: error.details[0].message 
         });
       }
-
-      // Verificar se transação existe e pertence ao usuário
       const existingTransaction = await prisma.transaction.findFirst({
         where: {
           id,
@@ -226,7 +215,6 @@ class TransactionController {
         return res.status(404).json({ error: 'Transação não encontrada' });
       }
 
-      // Se está alterando a categoria, verificar se existe e é compatível
       if (value.categoryId) {
         const category = await prisma.category.findFirst({
           where: {
@@ -289,7 +277,6 @@ class TransactionController {
     try {
       const { id } = req.params;
 
-      // Verificar se transação existe e pertence ao usuário
       const transaction = await prisma.transaction.findFirst({
         where: {
           id,
@@ -322,12 +309,13 @@ class TransactionController {
       let startDate, endDate;
       
       if (month && year) {
-        startDate = moment(`${year}-${month}-01`).startOf('month').toDate();
-        endDate = moment(startDate).endOf('month').toDate();
+        const date = new Date(year, month - 1, 1);
+        startDate = new Date(date.getFullYear(), date.getMonth(), 1);
+        endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
       } else {
-        // Último mês se não especificado
-        startDate = moment().startOf('month').toDate();
-        endDate = moment().endOf('month').toDate();
+        const now = new Date();
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       }
 
       const [
@@ -338,7 +326,6 @@ class TransactionController {
         incomesByCategory,
         recentTransactions
       ] = await Promise.all([
-        // Total de receitas
         prisma.transaction.aggregate({
           where: {
             userId: req.userId,
@@ -347,7 +334,6 @@ class TransactionController {
           },
           _sum: { amount: true }
         }),
-        // Total de despesas
         prisma.transaction.aggregate({
           where: {
             userId: req.userId,
@@ -356,14 +342,12 @@ class TransactionController {
           },
           _sum: { amount: true }
         }),
-        // Contagem de transações
         prisma.transaction.count({
           where: {
             userId: req.userId,
             date: { gte: startDate, lte: endDate }
           }
         }),
-        // Despesas por categoria
         prisma.transaction.groupBy({
           by: ['categoryId'],
           where: {
@@ -374,7 +358,6 @@ class TransactionController {
           _sum: { amount: true },
           _count: { id: true }
         }),
-        // Receitas por categoria
         prisma.transaction.groupBy({
           by: ['categoryId'],
           where: {
@@ -385,7 +368,6 @@ class TransactionController {
           _sum: { amount: true },
           _count: { id: true }
         }),
-        // Transações recentes
         prisma.transaction.findMany({
           where: {
             userId: req.userId,
@@ -404,7 +386,6 @@ class TransactionController {
         })
       ]);
 
-      // Buscar nomes das categorias
       const categoryIds = [
         ...expensesByCategory.map(e => e.categoryId),
         ...incomesByCategory.map(i => i.categoryId)
@@ -442,8 +423,8 @@ class TransactionController {
         period: {
           startDate,
           endDate,
-          month: moment(startDate).format('MM'),
-          year: moment(startDate).format('YYYY')
+          month: String(startDate.getMonth() + 1).padStart(2, '0'),
+          year: String(startDate.getFullYear())
         },
         summary: {
           totalIncome: totalIncome._sum.amount || 0,
@@ -466,8 +447,9 @@ class TransactionController {
     try {
       const { months = 12 } = req.query;
       
-      const endDate = moment().endOf('month').toDate();
-      const startDate = moment().subtract(parseInt(months) - 1, 'months').startOf('month').toDate();
+      const now = new Date();
+      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      const startDate = new Date(now.getFullYear(), now.getMonth() - parseInt(months) + 1, 1);
 
       const transactions = await prisma.transaction.findMany({
         where: {
@@ -481,14 +463,16 @@ class TransactionController {
         }
       });
 
-      // Agrupar por mês
       const monthlyData = {};
+      const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
       
       for (let i = 0; i < parseInt(months); i++) {
-        const month = moment().subtract(i, 'months');
-        const key = month.format('YYYY-MM');
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const key = `${year}-${String(month + 1).padStart(2, '0')}`;
         monthlyData[key] = {
-          month: month.format('MMMM YYYY'),
+          month: `${monthNames[month]} ${year}`,
           income: 0,
           expense: 0,
           balance: 0
@@ -496,7 +480,10 @@ class TransactionController {
       }
 
       transactions.forEach(transaction => {
-        const key = moment(transaction.date).format('YYYY-MM');
+        const date = new Date(transaction.date);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const key = `${year}-${month}`;
         if (monthlyData[key]) {
           if (transaction.type === 'income') {
             monthlyData[key].income += transaction.amount;
@@ -506,7 +493,6 @@ class TransactionController {
         }
       });
 
-      // Calcular saldo
       Object.keys(monthlyData).forEach(key => {
         monthlyData[key].balance = monthlyData[key].income - monthlyData[key].expense;
       });

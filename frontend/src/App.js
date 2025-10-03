@@ -4,11 +4,8 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
 
-// Components
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
-
-// Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -16,7 +13,6 @@ import Transactions from './pages/Transactions';
 import TransactionsDebug from './pages/TransactionsDebug';
 import Reports from './pages/Reports';
 
-// Theme
 const theme = createTheme({
   palette: {
     primary: {
@@ -59,11 +55,9 @@ function App() {
       >
         <Router>
           <Routes>
-            {/* Rotas públicas */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             
-            {/* Rotas protegidas */}
             <Route path="/dashboard" element={
               <PrivateRoute>
                 <Layout>
@@ -96,10 +90,7 @@ function App() {
               </PrivateRoute>
             } />
             
-            {/* Rota padrão */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
-            {/* Rota 404 */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Router>

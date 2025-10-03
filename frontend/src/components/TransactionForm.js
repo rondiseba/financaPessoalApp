@@ -50,7 +50,6 @@ const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
       [field]: value
     }));
 
-    // Limpar erro do campo
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -132,16 +131,7 @@ const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
     }
   };
 
-  // Filtrar categorias pelo tipo selecionado
   const filteredCategories = categories.filter(cat => cat.type === formData.type);
-  
-  // Debug: log para verificar categorias
-  console.log('Debug TransactionForm:', {
-    categories: categories.length,
-    formType: formData.type,
-    filteredCategories: filteredCategories.length,
-    categoriesData: categories.map(c => ({ id: c.id, name: c.name, type: c.type }))
-  });
 
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
