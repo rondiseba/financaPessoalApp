@@ -1,101 +1,74 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
-import { SnackbarProvider } from 'notistack';
+import CssBaseline from '@mui/material/CssBaseline';
+import { Toaster } from 'react-hot-toast';
 
-import Layout from './components/Layout';
-import PrivateRoute from './components/PrivateRoute';
+import { ColorModeProvider } from './theme/ColorModeContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
-import TransactionsDebug from './pages/TransactionsDebug';
 import Reports from './pages/Reports';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2196F3',
-    },
-    secondary: {
-      main: '#FF9800',
-    },
-    success: {
-      main: '#4CAF50',
-    },
-    error: {
-      main: '#F44336',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-        },
-      },
-    },
-  },
-});
+import Layout from './components/Layout';
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
+    <ColorModeProvider>
       <CssBaseline />
-      <SnackbarProvider 
-        maxSnack={3}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        gutter={8}
+        toastOptions={{
+          duration: 4000,
+          style: {
+            borderRadius: '12px',
+            background: '#fff',
+            color: '#1E293B',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            padding: '16px',
+            fontSize: '14px',
+            fontFamily: 'Inter, sans-serif',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
         }}
-      >
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            <Route path="/dashboard" element={
+      />
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/*"
+            element={
               <PrivateRoute>
                 <Layout>
-                  <Dashboard />
+                  <Routes>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/transactions" element={<Transactions />} />
+                    <Route path="/reports" element={<Reports />} />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
                 </Layout>
               </PrivateRoute>
-            } />
-            
-            <Route path="/transactions" element={
-              <PrivateRoute>
-                <Layout>
-                  <Transactions />
-                </Layout>
-              </PrivateRoute>
-            } />
-            
-            <Route path="/transactions-debug" element={
-              <PrivateRoute>
-                <Layout>
-                  <TransactionsDebug />
-                </Layout>
-              </PrivateRoute>
-            } />
-            
-            <Route path="/reports" element={
-              <PrivateRoute>
-                <Layout>
-                  <Reports />
-                </Layout>
-              </PrivateRoute>
-            } />
-            
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </Router>
-      </SnackbarProvider>
-    </ThemeProvider>
+            }
+          />
+        </Routes>
+      </Router>
+    </ColorModeProvider>
   );
 }
 

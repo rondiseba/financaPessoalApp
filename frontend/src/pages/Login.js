@@ -9,10 +9,14 @@ import {
   Alert,
   Container,
   Avatar,
-  Grid
+  Grid,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
-import { AccountBalanceWallet } from '@mui/icons-material';
+import { AccountBalanceWallet, Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { authService } from '../services';
 import { validateEmail } from '../utils/helpers';
 
@@ -25,6 +29,7 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ show: false, message: '', severity: 'error' });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,11 +81,7 @@ const Login = () => {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
 
-      setAlert({
-        show: true,
-        message: 'Login realizado com sucesso!',
-        severity: 'success'
-      });
+      toast.success('Login realizado com sucesso!');
 
       // Redirecionar para dashboard após um breve delay
       setTimeout(() => {
@@ -88,11 +89,13 @@ const Login = () => {
       }, 1000);
 
     } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Erro ao fazer login';
       setAlert({
         show: true,
-        message: error.response?.data?.error || 'Erro ao fazer login',
+        message: errorMessage,
         severity: 'error'
       });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -100,35 +103,53 @@ const Login = () => {
 
   return (
     <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        <Paper
-          elevation={3}
+        <Box
           sx={{
-            padding: 4,
-            width: '100%',
+            marginTop: 8,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-            <AccountBalanceWallet />
-          </Avatar>
-          
-          <Typography component="h1" variant="h4" gutterBottom>
-            Controle de Gastos
-          </Typography>
-          
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            Faça login em sua conta
-          </Typography>
+          <Paper
+            elevation={3}
+            sx={{
+              padding: 4,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            >
+              <Avatar sx={{ 
+                m: 1, 
+                width: 64, 
+                height: 64,
+                background: 'linear-gradient(135deg, #6366F1 0%, #EC4899 100%)',
+              }}>
+                <AccountBalanceWallet sx={{ fontSize: 36 }} />
+              </Avatar>
+            </motion.div>
+            
+            <Typography component="h1" variant="h4" gutterBottom fontWeight={700}>
+              Controle de Gastos
+            </Typography>
+            
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Faça login em sua conta
+            </Typography>
 
           {alert.show && (
             <Alert 
@@ -155,6 +176,13 @@ const Login = () => {
               error={!!errors.email}
               helperText={errors.email}
               disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Email color="primary" />
+                  </InputAdornment>
+                ),
+              }}
             />
             
             <TextField
@@ -163,7 +191,7 @@ const Login = () => {
               fullWidth
               name="password"
               label="Senha"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               id="password"
               autoComplete="current-password"
               value={formData.password}
@@ -171,17 +199,45 @@ const Login = () => {
               error={!!errors.password}
               helperText={errors.password}
               disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock color="primary" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={loading}
+            <motion.div
+              style={{ width: '100%' }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              {loading ? 'Entrando...' : 'Entrar'}
-            </Button>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ 
+                  mt: 3, 
+                  mb: 2,
+                  py: 1.5,
+                  fontSize: '1rem',
+                }}
+                disabled={loading}
+              >
+                {loading ? 'Entrando...' : 'Entrar'}
+              </Button>
+            </motion.div>
             
             <Grid container justifyContent="center">
               <Grid item>
@@ -202,10 +258,11 @@ const Login = () => {
 
         <Box sx={{ mt: 4, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            © 2024 Controle de Gastos Pessoal
+            © 2025 Controle de Gastos Pessoal
           </Typography>
         </Box>
       </Box>
+      </motion.div>
     </Container>
   );
 };
