@@ -33,9 +33,9 @@ import {
   FilterList
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { transactionService, categoryService } from '../services';
 import { formatCurrency, formatDate, getTransactionTypeLabel } from '../utils/helpers';
 import TransactionForm from '../components/TransactionForm';
@@ -82,12 +82,11 @@ const TransactionsDebug = () => {
         ...filters
       };
 
-      // Formatar datas para o backend
       if (filters.startDate) {
-        params.startDate = moment(filters.startDate).format('YYYY-MM-DD');
+        params.startDate = dayjs(filters.startDate).format('YYYY-MM-DD');
       }
       if (filters.endDate) {
-        params.endDate = moment(filters.endDate).format('YYYY-MM-DD');
+        params.endDate = dayjs(filters.endDate).format('YYYY-MM-DD');
       }
 
       addDebugLog('Chamando API com parâmetros:', params);
@@ -174,7 +173,7 @@ const TransactionsDebug = () => {
   );
 
   return (
-    <LocalizationProvider dateAdapter={AdapterMoment}>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box sx={{ p: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h4">

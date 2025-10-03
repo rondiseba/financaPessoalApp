@@ -122,8 +122,8 @@ class ReportController {
       // Formatação de valores
       worksheet.getColumn('amount').numFmt = 'R$ #,##0.00';
 
-      // Salvar arquivo
-      const fileName = `relatorio-${month}-${year}.xlsx`;
+      // Salvar arquivo com userId para isolar por usuário
+      const fileName = `relatorio-${req.userId}-${month}-${year}.xlsx`;
       const filePath = path.join(__dirname, '../../reports', fileName);
       
       // Criar diretório se não existir
@@ -189,9 +189,9 @@ class ReportController {
         select: { name: true, email: true }
       });
 
-      // Criar PDF
+      // Criar PDF com userId para isolar por usuário
       const doc = new PDFDocument({ margin: 50 });
-      const fileName = `relatorio-${month}-${year}.pdf`;
+      const fileName = `relatorio-${req.userId}-${month}-${year}.pdf`;
       const filePath = path.join(__dirname, '../../reports', fileName);
 
       // Criar diretório se não existir
@@ -327,12 +327,20 @@ class ReportController {
       }
 
       const files = fs.readdirSync(reportsDir);
-      const reports = files.map(file => {
+      
+      // Filtrar apenas relatórios do usuário atual
+      const userFiles = files.filter(file => file.includes(req.userId));
+      
+      const reports = userFiles.map(file => {
         const filePath = path.join(reportsDir, file);
         const stats = fs.statSync(filePath);
         
+        // Remover userId do nome exibido
+        const displayName = file.replace(`-${req.userId}`, '');
+        
         return {
           fileName: file,
+          displayName: displayName,
           downloadUrl: `/api/reports/download/${file}`,
           size: stats.size,
           createdAt: stats.birthtime,
@@ -359,6 +367,11 @@ class ReportController {
         return res.status(404).json({ error: 'Arquivo não encontrado' });
       }
 
+      // Verificar se o arquivo pertence ao usuário logado
+      if (!fileName.includes(req.userId)) {
+        return res.status(403).json({ error: 'Acesso negado' });
+      }
+
       fs.unlinkSync(filePath);
 
       res.json({ message: 'Relatório excluído com sucesso' });
@@ -379,10 +392,14 @@ class ReportController {
       }
 
       // Verificar se o arquivo pertence ao usuário logado
-      // Para simplificar, vamos permitir download se o arquivo existe
-      // Em produção, seria ideal armazenar o userId no nome do arquivo
+      if (!fileName.includes(req.userId)) {
+        return res.status(403).json({ error: 'Acesso negado' });
+      }
 
-      res.download(filePath, fileName, (err) => {
+      // Remover userId do nome do download
+      const downloadName = fileName.replace(`-${req.userId}`, '');
+
+      res.download(filePath, downloadName, (err) => {
         if (err) {
           console.error('Erro ao fazer download do arquivo:', err);
           res.status(500).json({ error: 'Erro ao fazer download do arquivo' });

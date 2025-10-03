@@ -22,7 +22,6 @@ import {
   Menu as MenuIcon,
   Dashboard,
   Receipt,
-  Category,
   Assessment,
   AccountCircle,
   Logout,
@@ -45,7 +44,6 @@ const Layout = ({ children }) => {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
     { text: 'Transações', icon: <Receipt />, path: '/transactions' },
-    { text: 'Categorias', icon: <Category />, path: '/categories' },
     { text: 'Relatórios', icon: <Assessment />, path: '/reports' }
   ];
 
