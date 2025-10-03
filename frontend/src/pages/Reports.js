@@ -93,9 +93,33 @@ const Reports = () => {
     }
   };
 
-  const downloadReport = (fileName) => {
-    const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/reports/${fileName}`;
-    window.open(url, '_blank');
+  const downloadReport = async (fileName) => {
+    try {
+      const token = localStorage.getItem('token');
+      const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/reports/download/${fileName}`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao fazer download');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+    } catch (err) {
+      setError(`Erro ao fazer download: ${err.message}`);
+    }
   };
 
   const formatFileSize = (bytes) => {
@@ -248,7 +272,7 @@ const Reports = () => {
                 {reports.map((report) => (
                   <TableRow key={report.fileName} hover>
                     <TableCell>
-                      {report.fileName}
+                      {report.displayName || report.fileName}
                     </TableCell>
                     <TableCell>
                       <Chip

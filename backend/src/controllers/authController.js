@@ -5,7 +5,6 @@ const Joi = require('joi');
 
 const prisma = new PrismaClient();
 
-// Schemas de validação
 const registerSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
   email: Joi.string().email().required(),
@@ -20,7 +19,6 @@ const loginSchema = Joi.object({
 class AuthController {
   async register(req, res) {
     try {
-      // Validar dados de entrada
       const { error, value } = registerSchema.validate(req.body);
       if (error) {
         return res.status(400).json({ 
@@ -31,7 +29,6 @@ class AuthController {
 
       const { name, email, password } = value;
 
-      // Verificar se usuário já existe
       const existingUser = await prisma.user.findUnique({
         where: { email }
       });
@@ -40,10 +37,7 @@ class AuthController {
         return res.status(409).json({ error: 'Usuário já existe com este email' });
       }
 
-      // Hash da senha
       const hashedPassword = await bcrypt.hash(password, 12);
-
-      // Criar usuário
       const user = await prisma.user.create({
         data: {
           name,
@@ -58,10 +52,8 @@ class AuthController {
         }
       });
 
-      // Criar categorias padrão para o usuário
       await authController.createDefaultCategories(user.id);
 
-      // Gerar token JWT
       const token = jwt.sign(
         { userId: user.id, email: user.email },
         process.env.JWT_SECRET,
@@ -82,7 +74,6 @@ class AuthController {
 
   async login(req, res) {
     try {
-      // Validar dados de entrada
       const { error, value } = loginSchema.validate(req.body);
       if (error) {
         return res.status(400).json({ 
@@ -93,7 +84,6 @@ class AuthController {
 
       const { email, password } = value;
 
-      // Buscar usuário
       const user = await prisma.user.findUnique({
         where: { email }
       });
@@ -102,13 +92,10 @@ class AuthController {
         return res.status(401).json({ error: 'Credenciais inválidas' });
       }
 
-      // Verificar senha
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: 'Credenciais inválidas' });
       }
-
-      // Gerar token JWT
       const token = jwt.sign(
         { userId: user.id, email: user.email },
         process.env.JWT_SECRET,
@@ -153,12 +140,9 @@ class AuthController {
 
   async createDefaultCategories(userId) {
     const defaultCategories = [
-      // Receitas
       { name: 'Salário', type: 'income', color: '#4CAF50' },
       { name: 'Freelance', type: 'income', color: '#8BC34A' },
       { name: 'Investimentos', type: 'income', color: '#CDDC39' },
-      
-      // Despesas
       { name: 'Alimentação', type: 'expense', color: '#FF5722' },
       { name: 'Transporte', type: 'expense', color: '#FF9800' },
       { name: 'Moradia', type: 'expense', color: '#F44336' },

@@ -4,9 +4,6 @@ import {
   Grid,
   Paper,
   Typography,
-  Card,
-  CardContent,
-  CircularProgress,
   Alert,
   Chip
 } from '@mui/material';
@@ -29,8 +26,13 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { dashboardService, transactionService } from '../services';
 import { formatCurrency, formatDate, getColorByType } from '../utils/helpers';
+import GlassStatCard from '../components/GlassStatCard';
+import CustomLoader from '../components/CustomLoader';
+import EmptyState from '../components/EmptyState';
 
 ChartJS.register(
   CategoryScale,
@@ -66,48 +68,16 @@ const Dashboard = () => {
 
       setDashboardData(dashData);
       setMonthlyTrend(trendData.trend);
+      toast.success('Dashboard atualizado!');
 
     } catch (err) {
       setError('Erro ao carregar dados do dashboard');
+      toast.error('Erro ao carregar dados do dashboard');
       console.error('Erro no dashboard:', err);
     } finally {
       setLoading(false);
     }
   };
-
-  const StatCard = ({ title, value, icon, color, trend }) => (
-    <Card elevation={2}>
-      <CardContent>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box>
-            <Typography color="textSecondary" gutterBottom variant="body2">
-              {title}
-            </Typography>
-            <Typography variant="h5" component="h2" color={color}>
-              {value}
-            </Typography>
-            {trend && (
-              <Box display="flex" alignItems="center" mt={1}>
-                {trend.direction === 'up' ? (
-                  <TrendingUp color="success" fontSize="small" />
-                ) : (
-                  <TrendingDown color="error" fontSize="small" />
-                )}
-                <Typography variant="body2" color={trend.direction === 'up' ? 'success.main' : 'error.main'}>
-                  {trend.percentage}%
-                </Typography>
-              </Box>
-            )}
-          </Box>
-          <Box>
-            {React.cloneElement(icon, { 
-              sx: { fontSize: 40, color: color === 'error.main' ? 'error.main' : 'primary.main' } 
-            })}
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
 
   const getExpenseChartData = () => {
     if (!dashboardData?.categoryStats?.expenses?.length) return null;
@@ -159,27 +129,19 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
+    return <CustomLoader message="Carregando dashboard..." />;
   }
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        {error}
-      </Alert>
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
     );
   }
 
   if (!dashboardData) {
-    return (
-      <Alert severity="info" sx={{ m: 2 }}>
-        Nenhum dado encontrado
-      </Alert>
-    );
+    return <EmptyState title="Nenhum dado encontrado" message="Adicione transações para visualizar seu dashboard" />;
   }
 
   const { totalStats, recentTransactions } = dashboardData;
@@ -187,45 +149,53 @@ const Dashboard = () => {
   const trendChartData = getTrendChartData();
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard Financeiro
-      </Typography>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom fontWeight={700}>
+          Dashboard Financeiro
+        </Typography>
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Receitas"
-            value={formatCurrency(totalStats.totalIncome)}
+          <GlassStatCard
+            title="Receitas"
+            value={formatCurrency(totalStats.income)}
             icon={<TrendingUp />}
-            color="success.main"
+            gradient="linear-gradient(135deg, #10B981 0%, #34D399 100%)"
           />
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Despesas"
-            value={formatCurrency(totalStats.totalExpense)}
+          <GlassStatCard
+            title="Despesas"
+            value={formatCurrency(totalStats.expense)}
             icon={<TrendingDown />}
-            color="error.main"
+            gradient="linear-gradient(135deg, #EF4444 0%, #F87171 100%)"
           />
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
+          <GlassStatCard
             title="Saldo"
             value={formatCurrency(totalStats.balance)}
             icon={<AccountBalance />}
-            color={totalStats.balance >= 0 ? 'success.main' : 'error.main'}
+            gradient={totalStats.balance >= 0 
+              ? "linear-gradient(135deg, #6366F1 0%, #818CF8 100%)"
+              : "linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)"
+            }
           />
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
+          <GlassStatCard
             title="Transações"
             value={totalStats.transactionCount}
             icon={<Receipt />}
-            color="primary.main"
+            gradient="linear-gradient(135deg, #EC4899 0%, #F472B6 100%)"
           />
         </Grid>
       </Grid>
@@ -369,6 +339,7 @@ const Dashboard = () => {
         </Grid>
       </Grid>
     </Box>
+    </motion.div>
   );
 };
 

@@ -9,10 +9,14 @@ import {
   Alert,
   Container,
   Avatar,
-  Grid
+  Grid,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
-import { PersonAdd } from '@mui/icons-material';
+import { PersonAdd, Person, Email, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { authService } from '../services';
 import { validateEmail, validatePassword } from '../utils/helpers';
 

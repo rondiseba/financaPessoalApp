@@ -15,9 +15,9 @@ import {
   InputAdornment
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { transactionService } from '../services';
 
 const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
@@ -25,7 +25,7 @@ const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
     description: '',
     amount: '',
     type: 'expense',
-    date: moment(),
+    date: dayjs(),
     categoryId: ''
   });
   const [errors, setErrors] = useState({});
@@ -38,7 +38,7 @@ const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
         description: transaction.description,
         amount: transaction.amount.toString(),
         type: transaction.type,
-        date: moment(transaction.date),
+        date: dayjs(transaction.date),
         categoryId: transaction.categoryId
       });
     }
@@ -50,7 +50,6 @@ const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
       [field]: value
     }));
 
-    // Limpar erro do campo
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -132,19 +131,10 @@ const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
     }
   };
 
-  // Filtrar categorias pelo tipo selecionado
   const filteredCategories = categories.filter(cat => cat.type === formData.type);
-  
-  // Debug: log para verificar categorias
-  console.log('Debug TransactionForm:', {
-    categories: categories.length,
-    formType: formData.type,
-    filteredCategories: filteredCategories.length,
-    categoriesData: categories.map(c => ({ id: c.id, name: c.name, type: c.type }))
-  });
 
   return (
-    <LocalizationProvider dateAdapter={AdapterMoment}>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box component="form" onSubmit={handleSubmit} sx={{ pt: 2 }}>
         {alert.show && (
           <Alert 
@@ -268,7 +258,7 @@ const TransactionForm = ({ transaction, categories, onSave, onCancel }) => {
               disabled={loading}
             />
           )}
-          maxDate={moment()}
+          maxDate={dayjs()}
         />
 
         <Box display="flex" gap={2} mt={3} justifyContent="flex-end">

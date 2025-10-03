@@ -22,20 +22,23 @@ import {
   Menu as MenuIcon,
   Dashboard,
   Receipt,
-  Category,
   Assessment,
   AccountCircle,
   Logout,
-  AccountBalanceWallet
+  AccountBalanceWallet,
+  LightMode,
+  DarkMode
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services';
+import { useColorMode } from '../theme/ColorModeContext';
 
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { mode, toggleColorMode } = useColorMode();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
@@ -45,7 +48,6 @@ const Layout = ({ children }) => {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
     { text: 'Transações', icon: <Receipt />, path: '/transactions' },
-    { text: 'Categorias', icon: <Category />, path: '/categories' },
     { text: 'Relatórios', icon: <Assessment />, path: '/reports' }
   ];
 
@@ -136,10 +138,15 @@ const Layout = ({ children }) => {
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' } }}>
               Olá, {user?.name}
             </Typography>
+            
+            <IconButton onClick={toggleColorMode} color="inherit" sx={{ mr: 1 }}>
+              {mode === 'dark' ? <LightMode /> : <DarkMode />}
+            </IconButton>
+            
             <IconButton
               size="large"
               aria-label="account of current user"
