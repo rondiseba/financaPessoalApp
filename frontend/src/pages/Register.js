@@ -30,7 +30,8 @@ const Register = () => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState({ show: false, message: '', severity: 'error' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -87,7 +88,7 @@ const Register = () => {
     }
 
     setLoading(true);
-    setAlert({ show: false, message: '', severity: 'error' });
+    const loadingToast = toast.loading('Criando sua conta...');
 
     try {
       const response = await authService.register(
@@ -100,10 +101,8 @@ const Register = () => {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
 
-      setAlert({
-        show: true,
-        message: 'Conta criada com sucesso! Redirecionando...',
-        severity: 'success'
+      toast.success('Conta criada com sucesso! Bem-vindo! 🎉', {
+        id: loadingToast,
       });
 
       // Redirecionar para dashboard após um breve delay
@@ -112,10 +111,8 @@ const Register = () => {
       }, 1500);
 
     } catch (error) {
-      setAlert({
-        show: true,
-        message: error.response?.data?.error || 'Erro ao criar conta',
-        severity: 'error'
+      toast.error(error.response?.data?.error || 'Erro ao criar conta', {
+        id: loadingToast,
       });
     } finally {
       setLoading(false);
@@ -123,145 +120,247 @@ const Register = () => {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Paper
-          elevation={3}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Container component="main" maxWidth="sm">
+        <Box
           sx={{
-            padding: 4,
-            width: '100%',
+            marginTop: 8,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-            <PersonAdd />
-          </Avatar>
-          
-          <Typography component="h1" variant="h4" gutterBottom>
-            Controle de Gastos
-          </Typography>
-          
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            Crie sua conta
-          </Typography>
-
-          {alert.show && (
-            <Alert 
-              severity={alert.severity} 
-              sx={{ width: '100%', mb: 2 }}
-              onClose={() => setAlert({ ...alert, show: false })}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            style={{ width: '100%' }}
+          >
+            <Paper
+              elevation={0}
+              sx={{
+                padding: 4,
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)'
+                    : 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.02) 100%)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 3,
+              }}
             >
-              {alert.message}
-            </Alert>
-          )}
-
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="name"
-              label="Nome Completo"
-              name="name"
-              autoComplete="name"
-              autoFocus
-              value={formData.name}
-              onChange={handleChange}
-              error={!!errors.name}
-              helperText={errors.name}
-              disabled={loading}
-            />
-
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email"
-              name="email"
-              autoComplete="email"
-              value={formData.email}
-              onChange={handleChange}
-              error={!!errors.email}
-              helperText={errors.email}
-              disabled={loading}
-            />
-            
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Senha"
-              type="password"
-              id="password"
-              autoComplete="new-password"
-              value={formData.password}
-              onChange={handleChange}
-              error={!!errors.password}
-              helperText={errors.password}
-              disabled={loading}
-            />
-
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="confirmPassword"
-              label="Confirmar Senha"
-              type="password"
-              id="confirmPassword"
-              autoComplete="new-password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              error={!!errors.confirmPassword}
-              helperText={errors.confirmPassword}
-              disabled={loading}
-            />
-            
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={loading}
-            >
-              {loading ? 'Criando conta...' : 'Criar Conta'}
-            </Button>
-            
-            <Grid container justifyContent="center">
-              <Grid item>
-                <Link 
-                  component="button"
-                  variant="body2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate('/login');
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
+              >
+                <Avatar
+                  sx={{
+                    m: 1,
+                    width: 56,
+                    height: 56,
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                   }}
                 >
-                  Já tem uma conta? Faça login
-                </Link>
-              </Grid>
-            </Grid>
-          </Box>
-        </Paper>
+                  <PersonAdd sx={{ fontSize: 32 }} />
+                </Avatar>
+              </motion.div>
 
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            © 2024 Controle de Gastos Pessoal
-          </Typography>
+              <Typography
+                component="h1"
+                variant="h4"
+                fontWeight="700"
+                sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  mb: 0.5,
+                }}
+              >
+                Controle de Gastos
+              </Typography>
+
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                Crie sua conta
+              </Typography>
+
+              <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="name"
+                  label="Nome Completo"
+                  name="name"
+                  autoComplete="name"
+                  autoFocus
+                  value={formData.name}
+                  onChange={handleChange}
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  disabled={loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Person color={errors.name ? 'error' : 'action'} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="email"
+                  label="Email"
+                  name="email"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                  disabled={loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Email color={errors.email ? 'error' : 'action'} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="Senha"
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  autoComplete="new-password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  error={!!errors.password}
+                  helperText={errors.password}
+                  disabled={loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Lock color={errors.password ? 'error' : 'action'} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="confirmPassword"
+                  label="Confirmar Senha"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  error={!!errors.confirmPassword}
+                  helperText={errors.confirmPassword}
+                  disabled={loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Lock color={errors.confirmPassword ? 'error' : 'action'} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle confirm password visibility"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          edge="end"
+                        >
+                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{
+                      mt: 3,
+                      mb: 2,
+                      py: 1.5,
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                      },
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Criando conta...' : 'Criar Conta'}
+                  </Button>
+                </motion.div>
+
+                <Grid container justifyContent="center">
+                  <Grid item>
+                    <Link
+                      component="button"
+                      variant="body2"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate('/login');
+                      }}
+                      sx={{
+                        color: 'primary.main',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                        '&:hover': {
+                          textDecoration: 'underline',
+                        },
+                      }}
+                    >
+                      Já tem uma conta? Faça login
+                    </Link>
+                  </Grid>
+                </Grid>
+              </Box>
+            </Paper>
+          </motion.div>
+
+          <Box sx={{ mt: 4, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              © 2024 Controle de Gastos Pessoal
+            </Typography>
+          </Box>
         </Box>
-      </Box>
-    </Container>
+      </Container>
+    </motion.div>
   );
 };
 

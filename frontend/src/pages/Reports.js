@@ -11,33 +11,172 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   IconButton,
-  Chip
+  Chip,
+  Tooltip
 } from '@mui/material';
 import {
   GetApp,
   PictureAsPdf,
   TableChart,
   Delete,
-  Refresh
+  Refresh,
+  Description,
+  InsertDriveFile
 } from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { reportService } from '../services';
 import { getCurrentMonth, getCurrentYear, getMonthName } from '../utils/helpers';
+import EmptyState from '../components/EmptyState';
+
+// Modern Report Card Component
+const ModernReportCard = ({ report, onDownload, onDelete }) => {
+  const isPDF = report.type === 'PDF';
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Paper
+        sx={{
+          p: 3,
+          height: '100%',
+          background: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.02) 100%)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid',
+          borderColor: 'divider',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            borderColor: 'primary.main',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark'
+                ? '0 8px 24px rgba(99, 102, 241, 0.3)'
+                : '0 8px 24px rgba(99, 102, 241, 0.15)',
+          },
+        }}
+      >
+        {/* Icon and Type */}
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+          <Box display="flex" alignItems="center" gap={1.5}>
+            {isPDF ? (
+              <PictureAsPdf sx={{ fontSize: 40, color: '#ef4444' }} />
+            ) : (
+              <TableChart sx={{ fontSize: 40, color: '#10b981' }} />
+            )}
+            <Box>
+              <Typography variant="h6" fontWeight="600">
+                {report.displayName || report.fileName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {new Date(report.createdAt).toLocaleDateString('pt-BR', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </Typography>
+            </Box>
+          </Box>
+          <Chip
+            label={report.type}
+            color={isPDF ? 'error' : 'success'}
+            size="small"
+            sx={{ fontWeight: '600' }}
+          />
+        </Box>
+
+        {/* File Info */}
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            bgcolor: (theme) =>
+              theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+            mb: 2,
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Tamanho
+              </Typography>
+              <Typography variant="body2" fontWeight="600">
+                {formatFileSize(report.size)}
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Formato
+              </Typography>
+              <Typography variant="body2" fontWeight="600">
+                {isPDF ? '.pdf' : '.xlsx'}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Actions */}
+        <Box display="flex" gap={1}>
+          <Tooltip title="Baixar relatório">
+            <Button
+              variant="contained"
+              startIcon={<GetApp />}
+              onClick={() => onDownload(report.fileName)}
+              fullWidth
+              sx={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                },
+              }}
+            >
+              Download
+            </Button>
+          </Tooltip>
+          <Tooltip title="Excluir relatório">
+            <IconButton
+              color="error"
+              onClick={() => onDelete(report.fileName)}
+              sx={{
+                border: '1px solid',
+                borderColor: 'error.main',
+                '&:hover': {
+                  bgcolor: 'error.main',
+                  color: 'white',
+                },
+              }}
+            >
+              <Delete />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Paper>
+    </motion.div>
+  );
+};
+
+// Helper function
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 const Reports = () => {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentYear());
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     loadReports();
@@ -54,8 +193,8 @@ const Reports = () => {
 
   const generateReport = async (type) => {
     setLoading(true);
-    setError('');
-    setSuccess('');
+
+    const loadingToast = toast.loading(`Gerando relatório ${type.toUpperCase()}...`);
 
     try {
       let response;
@@ -65,7 +204,9 @@ const Reports = () => {
         response = await reportService.generatePDF(selectedMonth, selectedYear);
       }
 
-      setSuccess(`Relatório ${type.toUpperCase()} gerado com sucesso!`);
+      toast.success(`Relatório ${type.toUpperCase()} gerado com sucesso!`, {
+        id: loadingToast,
+      });
       loadReports(); // Recarregar lista de relatórios
 
       // Abrir relatório em nova aba
@@ -73,7 +214,9 @@ const Reports = () => {
       window.open(url, '_blank');
 
     } catch (err) {
-      setError(`Erro ao gerar relatório ${type.toUpperCase()}: ${err.response?.data?.error || err.message}`);
+      toast.error(`Erro ao gerar relatório: ${err.response?.data?.error || err.message}`, {
+        id: loadingToast,
+      });
     } finally {
       setLoading(false);
     }
@@ -84,16 +227,22 @@ const Reports = () => {
       return;
     }
 
+    const loadingToast = toast.loading('Excluindo relatório...');
+
     try {
       await reportService.delete(fileName);
-      setSuccess('Relatório excluído com sucesso!');
+      toast.success('Relatório excluído com sucesso!', { id: loadingToast });
       loadReports();
     } catch (err) {
-      setError(`Erro ao excluir relatório: ${err.response?.data?.error || err.message}`);
+      toast.error(`Erro ao excluir: ${err.response?.data?.error || err.message}`, {
+        id: loadingToast,
+      });
     }
   };
 
   const downloadReport = async (fileName) => {
+    const loadingToast = toast.loading('Preparando download...');
+
     try {
       const token = localStorage.getItem('token');
       const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/reports/download/${fileName}`;
@@ -117,17 +266,11 @@ const Reports = () => {
       a.click();
       window.URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(a);
-    } catch (err) {
-      setError(`Erro ao fazer download: ${err.message}`);
-    }
-  };
 
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      toast.success('Download iniciado!', { id: loadingToast });
+    } catch (err) {
+      toast.error(`Erro ao fazer download: ${err.message}`, { id: loadingToast });
+    }
   };
 
   const getYearOptions = () => {
@@ -147,211 +290,287 @@ const Reports = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Relatórios
-      </Typography>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
-          {success}
-        </Alert>
-      )}
-
-      {/* Geração de Relatórios */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Gerar Novo Relatório
-        </Typography>
-        
-        <Grid container spacing={3} alignItems="center">
-          <Grid item xs={12} sm={4}>
-            <FormControl fullWidth>
-              <InputLabel>Mês</InputLabel>
-              <Select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                label="Mês"
-              >
-                {getMonthOptions().map((month) => (
-                  <MenuItem key={month.value} value={month.value}>
-                    {month.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <FormControl fullWidth>
-              <InputLabel>Ano</InputLabel>
-              <Select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                label="Ano"
-              >
-                {getYearOptions().map((year) => (
-                  <MenuItem key={year} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <Box display="flex" gap={1}>
-              <Button
-                variant="outlined"
-                startIcon={<TableChart />}
-                onClick={() => generateReport('excel')}
-                disabled={loading}
-                fullWidth
-              >
-                Excel
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<PictureAsPdf />}
-                onClick={() => generateReport('pdf')}
-                disabled={loading}
-                fullWidth
-              >
-                PDF
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
-
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          Selecione o mês e ano para gerar um relatório detalhado das suas transações.
-          Os relatórios incluem todas as receitas, despesas e um resumo financeiro do período.
-        </Typography>
-      </Paper>
-
-      {/* Lista de Relatórios Gerados */}
-      <Paper sx={{ p: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">
-            Relatórios Gerados
-          </Typography>
-          <Button
-            startIcon={<Refresh />}
-            onClick={loadReports}
-            size="small"
-          >
-            Atualizar
-          </Button>
-        </Box>
-
-        {reports.length === 0 ? (
-          <Box textAlign="center" py={4}>
-            <Typography color="text.secondary">
-              Nenhum relatório gerado ainda.
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Box sx={{ p: 3 }}>
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Box mb={4}>
+            <Typography
+              variant="h4"
+              fontWeight="700"
+              sx={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 1,
+              }}
+            >
+              Relatórios Financeiros
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Gere e gerencie relatórios detalhados das suas transações
             </Typography>
           </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Nome do Arquivo</TableCell>
-                  <TableCell>Tipo</TableCell>
-                  <TableCell>Tamanho</TableCell>
-                  <TableCell>Data de Criação</TableCell>
-                  <TableCell align="center">Ações</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {reports.map((report) => (
-                  <TableRow key={report.fileName} hover>
-                    <TableCell>
-                      {report.displayName || report.fileName}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={report.type}
-                        color={report.type === 'PDF' ? 'error' : 'success'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {formatFileSize(report.size)}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(report.createdAt).toLocaleString('pt-BR')}
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        color="primary"
-                        onClick={() => downloadReport(report.fileName)}
-                        title="Download"
-                      >
-                        <GetApp />
-                      </IconButton>
-                      <IconButton
-                        color="error"
-                        onClick={() => deleteReport(report.fileName)}
-                        title="Excluir"
-                      >
-                        <Delete />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+        </motion.div>
 
-      {/* Informações sobre Relatórios */}
-      <Paper sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Sobre os Relatórios
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Card variant="outlined">
-              <CardContent>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <TableChart color="success" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Relatório Excel</Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  • Planilha completa com todas as transações<br/>
-                  • Dados organizados por data<br/>
-                  • Totalizadores automáticos<br/>
-                  • Ideal para análises detalhadas
+        {/* Geração de Relatórios */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <Paper
+            sx={{
+              p: 4,
+              mb: 4,
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)'
+                  : 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.02) 100%)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={2} mb={3}>
+              <Description sx={{ fontSize: 32, color: 'primary.main' }} />
+              <Box>
+                <Typography variant="h6" fontWeight="600">
+                  Gerar Novo Relatório
                 </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card variant="outlined">
-              <CardContent>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <PictureAsPdf color="error" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Relatório PDF</Typography>
-                </Box>
                 <Typography variant="body2" color="text.secondary">
-                  • Relatório visual formatado<br/>
-                  • Resumo financeiro do período<br/>
-                  • Gráficos e estatísticas<br/>
-                  • Ideal para apresentações
+                  Selecione o período e o formato desejado
                 </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Paper>
-    </Box>
+              </Box>
+            </Box>
+
+            <Grid container spacing={3} alignItems="flex-end">
+              <Grid item xs={12} sm={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Mês</InputLabel>
+                  <Select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    label="Mês"
+                  >
+                    {getMonthOptions().map((month) => (
+                      <MenuItem key={month.value} value={month.value}>
+                        {month.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Ano</InputLabel>
+                  <Select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    label="Ano"
+                  >
+                    {getYearOptions().map((year) => (
+                      <MenuItem key={year} value={year}>
+                        {year}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <Box display="flex" gap={1.5}>
+                  <Tooltip title="Gerar planilha Excel">
+                    <Button
+                      variant="contained"
+                      startIcon={<TableChart />}
+                      onClick={() => generateReport('excel')}
+                      disabled={loading}
+                      fullWidth
+                      sx={{
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                        },
+                      }}
+                    >
+                      Excel
+                    </Button>
+                  </Tooltip>
+                  <Tooltip title="Gerar documento PDF">
+                    <Button
+                      variant="contained"
+                      startIcon={<PictureAsPdf />}
+                      onClick={() => generateReport('pdf')}
+                      disabled={loading}
+                      fullWidth
+                      sx={{
+                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                        },
+                      }}
+                    >
+                      PDF
+                    </Button>
+                  </Tooltip>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </motion.div>
+
+        {/* Lista de Relatórios Gerados */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box>
+              <Typography variant="h5" fontWeight="600">
+                Relatórios Gerados
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {reports.length} {reports.length === 1 ? 'relatório disponível' : 'relatórios disponíveis'}
+              </Typography>
+            </Box>
+            <Tooltip title="Atualizar lista">
+              <IconButton
+                onClick={loadReports}
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  '&:hover': {
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                  },
+                }}
+              >
+                <Refresh />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {reports.length === 0 ? (
+            <EmptyState
+              icon={InsertDriveFile}
+              title="Nenhum relatório gerado"
+              description="Gere seu primeiro relatório selecionando o período e formato acima"
+            />
+          ) : (
+            <Grid container spacing={3}>
+              <AnimatePresence mode="popLayout">
+                {reports.map((report) => (
+                  <Grid item xs={12} sm={6} md={4} key={report.fileName}>
+                    <ModernReportCard
+                      report={report}
+                      onDownload={downloadReport}
+                      onDelete={deleteReport}
+                    />
+                  </Grid>
+                ))}
+              </AnimatePresence>
+            </Grid>
+          )}
+        </motion.div>
+
+        {/* Informações sobre Relatórios */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Box mt={4}>
+            <Typography variant="h5" fontWeight="600" mb={3}>
+              Sobre os Relatórios
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    height: '100%',
+                    background: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%)'
+                        : 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.02) 100%)',
+                    border: '1px solid',
+                    borderColor: 'success.main',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={2}>
+                    <TableChart sx={{ fontSize: 40, color: '#10b981' }} />
+                    <Typography variant="h6" fontWeight="600">
+                      Relatório Excel
+                    </Typography>
+                  </Box>
+                  <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                    <Typography component="li" variant="body2" color="text.secondary" mb={1}>
+                      Planilha completa com todas as transações
+                    </Typography>
+                    <Typography component="li" variant="body2" color="text.secondary" mb={1}>
+                      Dados organizados por data
+                    </Typography>
+                    <Typography component="li" variant="body2" color="text.secondary" mb={1}>
+                      Totalizadores automáticos
+                    </Typography>
+                    <Typography component="li" variant="body2" color="text.secondary">
+                      Ideal para análises detalhadas
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    height: '100%',
+                    background: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%)'
+                        : 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.02) 100%)',
+                    border: '1px solid',
+                    borderColor: 'error.main',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={2}>
+                    <PictureAsPdf sx={{ fontSize: 40, color: '#ef4444' }} />
+                    <Typography variant="h6" fontWeight="600">
+                      Relatório PDF
+                    </Typography>
+                  </Box>
+                  <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                    <Typography component="li" variant="body2" color="text.secondary" mb={1}>
+                      Relatório visual formatado
+                    </Typography>
+                    <Typography component="li" variant="body2" color="text.secondary" mb={1}>
+                      Resumo financeiro do período
+                    </Typography>
+                    <Typography component="li" variant="body2" color="text.secondary" mb={1}>
+                      Gráficos e estatísticas
+                    </Typography>
+                    <Typography component="li" variant="body2" color="text.secondary">
+                      Ideal para apresentações
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Box>
+        </motion.div>
+      </Box>
+    </motion.div>
   );
 };
 
