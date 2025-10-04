@@ -14,9 +14,15 @@ const GlassStatCard = ({ title, value, icon, gradient, trend }) => {
         sx={{
           position: 'relative',
           overflow: 'hidden',
-          background: 'rgba(255, 255, 255, 0.9)',
+          background: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'rgba(30, 30, 46, 0.9)'
+              : 'rgba(255, 255, 255, 0.9)',
           backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
+          border: (theme) =>
+            theme.palette.mode === 'dark'
+              ? '1px solid rgba(255, 255, 255, 0.1)'
+              : '1px solid rgba(255, 255, 255, 0.3)',
           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&::before': {

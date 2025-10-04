@@ -163,7 +163,7 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <GlassStatCard
             title="Receitas"
-            value={formatCurrency(totalStats.income)}
+            value={formatCurrency(totalStats?.totalIncome || 0)}
             icon={<TrendingUp />}
             gradient="linear-gradient(135deg, #10B981 0%, #34D399 100%)"
           />
@@ -172,7 +172,7 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <GlassStatCard
             title="Despesas"
-            value={formatCurrency(totalStats.expense)}
+            value={formatCurrency(totalStats?.totalExpense || 0)}
             icon={<TrendingDown />}
             gradient="linear-gradient(135deg, #EF4444 0%, #F87171 100%)"
           />
@@ -181,9 +181,9 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <GlassStatCard
             title="Saldo"
-            value={formatCurrency(totalStats.balance)}
+            value={formatCurrency(totalStats?.balance || 0)}
             icon={<AccountBalance />}
-            gradient={totalStats.balance >= 0 
+            gradient={(totalStats?.balance || 0) >= 0 
               ? "linear-gradient(135deg, #6366F1 0%, #818CF8 100%)"
               : "linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)"
             }
@@ -193,7 +193,7 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <GlassStatCard
             title="Transações"
-            value={totalStats.transactionCount}
+            value={totalStats?.transactionCount || 0}
             icon={<Receipt />}
             gradient="linear-gradient(135deg, #EC4899 0%, #F472B6 100%)"
           />
