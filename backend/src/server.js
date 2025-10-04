@@ -9,6 +9,7 @@ const categoryRoutes = require('./routes/categories');
 const transactionRoutes = require('./routes/transactions');
 const reportRoutes = require('./routes/reports');
 const dashboardRoutes = require('./routes/dashboard');
+const recurringRoutes = require('./routes/recurring');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,6 +27,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/recurring', recurringRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ 

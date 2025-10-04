@@ -41,15 +41,17 @@ model Category {
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  description String
-  amount      Float
-  type        String   // "income" ou "expense"
-  date        DateTime
-  categoryId  String
-  userId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  description    String
+  amount         Float
+  type           String   // "income" ou "expense"
+  date           DateTime
+  categoryId     String
+  userId         String
+  isRecurring    Boolean  @default(false) // Se é um gasto fixo
+  recurringDay   Int?     // Dia do mês para repetir (1-31)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id])
