@@ -48,6 +48,7 @@ const Layout = ({ children }) => {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
     { text: 'Transações', icon: <Receipt />, path: '/transactions' },
+    { text: 'Gastos Fixos', icon: <AccountBalanceWallet />, path: '/recurring' },
     { text: 'Relatórios', icon: <Assessment />, path: '/reports' }
   ];
 

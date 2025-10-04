@@ -141,3 +141,37 @@ export const dashboardService = {
     return response.data;
   }
 };
+
+export const recurringService = {
+  async list() {
+    const response = await api.get('/recurring');
+    return response.data;
+  },
+
+  async create(data) {
+    const response = await api.post('/recurring', data);
+    return response.data;
+  },
+
+  async update(id, data) {
+    const response = await api.put(`/recurring/${id}`, data);
+    return response.data;
+  },
+
+  async delete(id) {
+    const response = await api.delete(`/recurring/${id}`);
+    return response.data;
+  },
+
+  async registerPayment(id, data) {
+    const response = await api.post(`/recurring/${id}/payment`, data);
+    return response.data;
+  },
+
+  async getPending(month, year) {
+    const response = await api.get('/recurring/pending', {
+      params: { month, year }
+    });
+    return response.data;
+  }
+};
