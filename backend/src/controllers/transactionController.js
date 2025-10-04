@@ -6,8 +6,10 @@ const transactionSchema = Joi.object({
   description: Joi.string().min(1).max(255).required(),
   amount: Joi.number().positive().required(),
   type: Joi.string().valid('income', 'expense').required(),
-  date: Joi.date().required(),
-  categoryId: Joi.string().required()
+  date: Joi.date().optional().allow(null),
+  categoryId: Joi.string().required(),
+  isRecurring: Joi.boolean().optional(),
+  recurringDay: Joi.number().integer().min(1).max(31).optional().allow(null)
 });
 
 const updateTransactionSchema = Joi.object({
@@ -15,7 +17,9 @@ const updateTransactionSchema = Joi.object({
   amount: Joi.number().positive().optional(),
   type: Joi.string().valid('income', 'expense').optional(),
   date: Joi.date().optional(),
-  categoryId: Joi.string().optional()
+  categoryId: Joi.string().optional(),
+  isRecurring: Joi.boolean().optional(),
+  recurringDay: Joi.number().integer().min(1).max(31).optional().allow(null)
 });
 
 class TransactionController {
@@ -143,7 +147,7 @@ class TransactionController {
         });
       }
 
-      const { description, amount, type, date, categoryId } = value;
+      const { description, amount, type, date, categoryId, isRecurring, recurringDay } = value;
       const category = await prisma.category.findFirst({
         where: {
           id: categoryId,
@@ -161,14 +165,32 @@ class TransactionController {
         });
       }
 
+      // Se for transação recorrente, define a data para o próximo vencimento
+      let transactionDate;
+      if (isRecurring && recurringDay) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        transactionDate = new Date(year, month, recurringDay);
+        
+        // Se a data já passou no mês atual, agenda para o próximo mês
+        if (transactionDate < now) {
+          transactionDate = new Date(year, month + 1, recurringDay);
+        }
+      } else {
+        transactionDate = date ? new Date(date) : new Date();
+      }
+
       const transaction = await prisma.transaction.create({
         data: {
           description: description.trim(),
           amount,
           type,
-          date: new Date(date),
+          date: transactionDate,
           categoryId,
-          userId: req.userId
+          userId: req.userId,
+          isRecurring: isRecurring || false,
+          recurringDay: isRecurring ? recurringDay : null
         },
         include: {
           category: {
