@@ -4,12 +4,6 @@ import {
   Paper,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TablePagination,
   Chip,
   IconButton,
@@ -195,9 +189,6 @@ const Transactions = () => {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState(null);
-  
-  // View mode (cards ou table)
-  const [viewMode, setViewMode] = useState('cards'); // 'cards' ou 'table'
 
   useEffect(() => {
     loadCategories();
@@ -344,14 +335,6 @@ const Transactions = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-
-  const getTypeChip = (type) => (
-    <Chip
-      label={getTransactionTypeLabel(type)}
-      color={type === 'income' ? 'success' : 'error'}
-      size="small"
-    />
-  );
 
   if (loading) {
     return <CustomLoader message="Carregando transações..." />;
