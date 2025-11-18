@@ -36,7 +36,8 @@ import { formatCurrency, formatDate, getColorByType } from '../utils/helpers';
 import GlassStatCard from '../components/GlassStatCard';
 import CustomLoader from '../components/CustomLoader';
 import EmptyState from '../components/EmptyState';
-import { DashboardData, MonthlyTrendItem } from '../types/models';
+import { DashboardStats, TrendData, Transaction, CategoryStats } from '../types/models';
+import { DashboardDataResponse } from '../types/api';
 
 ChartJS.register(
   CategoryScale,
@@ -57,8 +58,10 @@ ChartJS.register(
  * @returns JSX.Element
  */
 const Dashboard: React.FC = () => {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [monthlyTrend, setMonthlyTrend] = useState<MonthlyTrendItem[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
@@ -79,7 +82,9 @@ const Dashboard: React.FC = () => {
         transactionService.getMonthlyTrend({ months: 6 })
       ]);
 
-      setDashboardData(dashData);
+      setStats(dashData.stats);
+      setRecentTransactions(dashData.recentTransactions);
+      setCategoryStats(dashData.categoryBreakdown);
       setMonthlyTrend(trendData.trend);
       toast.success('Dashboard atualizado!');
 

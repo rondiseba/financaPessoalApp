@@ -73,6 +73,11 @@ node_modules/
 # Build directories
 build/
 dist/
+frontend/build/
+backend/dist/
+
+# TypeScript
+*.tsbuildinfo
 
 # Database files
 *.db
@@ -83,6 +88,8 @@ database/*.db
 # Reports directory
 reports/*.xlsx
 reports/*.pdf
+backend/reports/*.xlsx
+backend/reports/*.pdf
 
 # IDE/Editor files
 .vscode/

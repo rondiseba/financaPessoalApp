@@ -77,7 +77,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     handleUserMenuClose();
   };
 
-  const SidebarContent = (): JSX.Element => (
+  const SidebarContent: React.FC = () => (
     <Box sx={{ width: 240 }}>
       <Box sx={{ p: 2, textAlign: 'center' }}>
         <AccountBalanceWallet sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
