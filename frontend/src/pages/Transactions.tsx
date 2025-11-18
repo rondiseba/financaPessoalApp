@@ -230,8 +230,8 @@ const Transactions: React.FC = () => {
       }
 
       const response = await transactionService.getAll(params);
-      setTransactions(response.transactions);
-      setTotalItems(response.pagination.totalItems);
+      setTransactions(response);
+      setTotalItems(response.length);
 
     } catch (err: any) {
       const errorMessage = 'Erro ao carregar transações';
@@ -250,7 +250,7 @@ const Transactions: React.FC = () => {
   const loadCategories = async (): Promise<void> => {
     try {
       const response = await categoryService.getAll();
-      setCategories(response.categories);
+      setCategories(response);
     } catch (err: any) {
       console.error('Erro ao carregar categorias:', err);
     }
@@ -283,8 +283,8 @@ const Transactions: React.FC = () => {
           newFilters.endDate = now.endOf('month');
           break;
         case 'quarterly':
-          newFilters.startDate = now.startOf('quarter');
-          newFilters.endDate = now.endOf('quarter');
+          newFilters.startDate = now.startOf('month').subtract(2, 'month');
+          newFilters.endDate = now.endOf('month');
           break;
         case 'yearly':
           newFilters.startDate = now.startOf('year');

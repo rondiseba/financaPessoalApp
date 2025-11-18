@@ -1,8 +1,6 @@
 import api from './api';
 import {
-  LoginRequest,
   LoginResponse,
-  RegisterRequest,
   RegisterResponse,
   User,
   Category,

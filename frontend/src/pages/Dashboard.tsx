@@ -228,8 +228,8 @@ const Dashboard: React.FC = () => {
               title="Receitas"
               value={formatCurrency(stats.totalIncome)}
               icon={TrendingUp}
-              color="success"
-              trend={+5.2}
+              gradient="linear-gradient(135deg, #10B981 0%, #34D399 100%)"
+              trend={{ value: 5.2, isPositive: true }}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -237,8 +237,8 @@ const Dashboard: React.FC = () => {
               title="Despesas"
               value={formatCurrency(stats.totalExpense)}
               icon={TrendingDown}
-              color="error"
-              trend={-3.1}
+              gradient="linear-gradient(135deg, #EF4444 0%, #F87171 100%)"
+              trend={{ value: 3.1, isPositive: false }}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -246,7 +246,7 @@ const Dashboard: React.FC = () => {
               title="Saldo"
               value={formatCurrency(stats.balance)}
               icon={AccountBalance}
-              color="primary"
+              gradient="linear-gradient(135deg, #6366F1 0%, #818CF8 100%)"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -254,7 +254,7 @@ const Dashboard: React.FC = () => {
               title="Transações"
               value={stats.transactionCount.toString()}
               icon={Receipt}
-              color="info"
+              gradient="linear-gradient(135deg, #EC4899 0%, #F472B6 100%)"
             />
           </Grid>
         </Grid>

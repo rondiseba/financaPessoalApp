@@ -126,6 +126,13 @@ export interface RegisterPaymentDTO {
   amount?: number;
 }
 
+export interface GenerateReportResponse {
+  message: string;
+  filename: string;
+  path: string;
+  downloadUrl: string;
+}
+
 export interface PendingRecurringResponse {
   pending: RecurringTransaction[];
   month: number;

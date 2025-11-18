@@ -50,6 +50,18 @@ export interface RecurringTransaction extends Transaction {
   recurringDay: number;
 }
 
+export interface ReportFile {
+  id: string;
+  filename: string;
+  path: string;
+  type: 'PDF' | 'EXCEL';
+  downloadUrl: string;
+  month: number;
+  year: number;
+  userId: string;
+  createdAt: string | Date;
+}
+
 // ==================== CHART DATA ====================
 
 export interface MonthlyData {

@@ -194,7 +194,7 @@ const Reports: React.FC = () => {
   const loadReports = async (): Promise<void> => {
     try {
       const response = await reportService.list();
-      setReports(response.reports);
+      setReports(response);
     } catch (err: any) {
       console.error('Erro ao carregar relatórios:', err);
     }

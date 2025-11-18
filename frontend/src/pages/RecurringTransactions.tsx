@@ -242,8 +242,8 @@ const RecurringTransactions: React.FC = () => {
         recurringService.list(),
         categoryService.getAll()
       ]);
-      setRecurring(recurringData.transactions);
-      setCategories(categoriesData.categories);
+      setRecurring(recurringData);
+      setCategories(categoriesData);
     } catch (err: any) {
       toast.error('Erro ao carregar dados');
       console.error(err);
@@ -291,11 +291,16 @@ const RecurringTransactions: React.FC = () => {
         selectedRecurring ? 'Atualizando...' : 'Criando gasto fixo...'
       );
 
+      const dataToSend = {
+        ...formData,
+        amount: parseFloat(formData.amount)
+      };
+
       if (selectedRecurring) {
-        await recurringService.update(selectedRecurring.id, formData);
+        await recurringService.update(selectedRecurring.id, dataToSend);
         toast.success('Gasto fixo atualizado!', { id: loadingToast });
       } else {
-        await recurringService.create(formData);
+        await recurringService.create(dataToSend);
         toast.success('Gasto fixo criado!', { id: loadingToast });
       }
 
@@ -335,7 +340,11 @@ const RecurringTransactions: React.FC = () => {
 
     try {
       const loadingToast = toast.loading('Registrando pagamento...');
-      await recurringService.registerPayment(selectedRecurring.id, paymentData);
+      const paymentToSend = {
+        ...paymentData,
+        amount: parseFloat(paymentData.amount)
+      };
+      await recurringService.registerPayment(selectedRecurring.id, paymentToSend);
       toast.success('Pagamento registrado!', { id: loadingToast });
       setOpenPaymentDialog(false);
       loadData();
