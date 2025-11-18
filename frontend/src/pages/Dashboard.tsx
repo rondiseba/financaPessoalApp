@@ -36,7 +36,7 @@ import { formatCurrency, formatDate, getColorByType } from '../utils/helpers';
 import GlassStatCard from '../components/GlassStatCard';
 import CustomLoader from '../components/CustomLoader';
 import EmptyState from '../components/EmptyState';
-import { DashboardStats, TrendData, Transaction, CategoryStats } from '../types/models';
+import { TrendData } from '../types/models';
 import { DashboardDataResponse } from '../types/api';
 
 ChartJS.register(
@@ -51,16 +51,8 @@ ChartJS.register(
   Legend
 );
 
-/**
- * Componente da página de Dashboard
- * Exibe visão geral financeira, gráficos e transações recentes
- * 
- * @returns JSX.Element
- */
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
-  const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardDataResponse | null>(null);
   const [monthlyTrend, setMonthlyTrend] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -69,9 +61,6 @@ const Dashboard: React.FC = () => {
     loadDashboardData();
   }, []);
 
-  /**
-   * Carrega os dados do dashboard e tendências mensais
-   */
   const loadDashboardData = async (): Promise<void> => {
     try {
       setLoading(true);
@@ -79,13 +68,11 @@ const Dashboard: React.FC = () => {
 
       const [dashData, trendData] = await Promise.all([
         dashboardService.getData('current'),
-        transactionService.getMonthlyTrend({ months: 6 })
+        transactionService.getMonthlyTrend()
       ]);
 
-      setStats(dashData.stats);
-      setRecentTransactions(dashData.recentTransactions);
-      setCategoryStats(dashData.categoryBreakdown);
-      setMonthlyTrend(trendData.trend);
+      setDashboardData(dashData);
+      setMonthlyTrend(trendData);
       toast.success('Dashboard atualizado!');
 
     } catch (err: any) {
@@ -97,21 +84,17 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  /**
-   * Gera dados para o gráfico de despesas por categoria
-   * @returns Dados formatados para o Chart.js ou null
-   */
   const getExpenseChartData = (): ChartData<'doughnut'> | null => {
-    if (!dashboardData?.categoryStats?.expenses?.length) return null;
+    if (!dashboardData?.categoryBreakdown?.length) return null;
 
-    const expenses = dashboardData.categoryStats.expenses;
+    const expenses = dashboardData.categoryBreakdown.filter(c => c.totalAmount > 0);
     
     return {
-      labels: expenses.map(exp => exp.category.name),
+      labels: expenses.map(exp => exp.categoryName),
       datasets: [
         {
-          data: expenses.map(exp => exp._sum.amount),
-          backgroundColor: expenses.map(exp => exp.category.color),
+          data: expenses.map(exp => exp.totalAmount),
+          backgroundColor: expenses.map(exp => exp.color),
           borderWidth: 2,
           borderColor: '#fff'
         }
@@ -119,15 +102,11 @@ const Dashboard: React.FC = () => {
     };
   };
 
-  /**
-   * Gera dados para o gráfico de tendência mensal
-   * @returns Dados formatados para o Chart.js ou null
-   */
   const getTrendChartData = (): ChartData<'line'> | null => {
     if (!monthlyTrend.length) return null;
 
     return {
-      labels: monthlyTrend.map(item => item.month),
+      labels: monthlyTrend.map(item => item.period),
       datasets: [
         {
           label: 'Receitas',
@@ -167,55 +146,66 @@ const Dashboard: React.FC = () => {
   }
 
   if (!dashboardData) {
-    return <EmptyState title="Nenhum dado encontrado" message="Adicione transações para visualizar seu dashboard" />;
+    return <EmptyState icon={Receipt} title="Nenhum dado encontrado" message="Adicione transações para visualizar seu dashboard" />;
   }
 
-  const { totalStats, recentTransactions } = dashboardData;
+  const { stats, recentTransactions } = dashboardData;
   const expenseChartData = getExpenseChartData();
   const trendChartData = getTrendChartData();
 
-  // Opções para o gráfico de linha
-  const lineChartOptions: ChartOptions<'line'> = {
+  const doughnutOptions: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'top',
+        position: 'bottom' as const,
+        labels: {
+          padding: 15,
+          usePointStyle: true
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: TooltipItem<'doughnut'>) => {
+            const label = context.label || '';
+            const value = context.parsed || 0;
+            return `${label}: ${formatCurrency(value)}`;
+          }
+        }
+      }
+    }
+  };
+
+  const lineOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false
+    },
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: {
+          usePointStyle: true,
+          padding: 15
+        }
       },
       tooltip: {
         callbacks: {
           label: (context: TooltipItem<'line'>) => {
-            return `${context.dataset.label}: ${formatCurrency(context.raw as number)}`;
+            const label = context.dataset.label || '';
+            const value = context.parsed.y || 0;
+            return `${label}: ${formatCurrency(value)}`;
           }
         }
       }
     },
     scales: {
       y: {
+        beginAtZero: true,
         ticks: {
-          callback: (value: string | number) => formatCurrency(Number(value))
-        }
-      }
-    }
-  };
-
-  // Opções para o gráfico de rosca
-  const doughnutChartOptions: ChartOptions<'doughnut'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-      },
-      tooltip: {
-        callbacks: {
-          label: (context: TooltipItem<'doughnut'>) => {
-            const label = context.label || '';
-            const value = formatCurrency(context.raw as number);
-            const total = (context.dataset.data as number[]).reduce((a, b) => a + b, 0);
-            const percentage = (((context.raw as number) / total) * 100).toFixed(1);
-            return `${label}: ${value} (${percentage}%)`;
-          }
+          callback: (value) => formatCurrency(Number(value))
         }
       }
     }
@@ -223,153 +213,164 @@ const Dashboard: React.FC = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
       <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom fontWeight={700}>
+        <Typography variant="h4" fontWeight={700} mb={4}>
           Dashboard Financeiro
         </Typography>
 
-        <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid container spacing={3} mb={4}>
           <Grid item xs={12} sm={6} md={3}>
             <GlassStatCard
               title="Receitas"
-              value={formatCurrency(totalStats?.totalIncome || 0)}
-              icon={<TrendingUp />}
-              gradient="linear-gradient(135deg, #10B981 0%, #34D399 100%)"
+              value={formatCurrency(stats.totalIncome)}
+              icon={TrendingUp}
+              color="success"
+              trend={+5.2}
             />
           </Grid>
-          
           <Grid item xs={12} sm={6} md={3}>
             <GlassStatCard
               title="Despesas"
-              value={formatCurrency(totalStats?.totalExpense || 0)}
-              icon={<TrendingDown />}
-              gradient="linear-gradient(135deg, #EF4444 0%, #F87171 100%)"
+              value={formatCurrency(stats.totalExpense)}
+              icon={TrendingDown}
+              color="error"
+              trend={-3.1}
             />
           </Grid>
-          
           <Grid item xs={12} sm={6} md={3}>
             <GlassStatCard
               title="Saldo"
-              value={formatCurrency(totalStats?.balance || 0)}
-              icon={<AccountBalance />}
-              gradient={(totalStats?.balance || 0) >= 0 
-                ? "linear-gradient(135deg, #6366F1 0%, #818CF8 100%)"
-                : "linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)"
-              }
+              value={formatCurrency(stats.balance)}
+              icon={AccountBalance}
+              color="primary"
             />
           </Grid>
-          
           <Grid item xs={12} sm={6} md={3}>
             <GlassStatCard
               title="Transações"
-              value={String(totalStats?.transactionCount || 0)}
-              icon={<Receipt />}
-              gradient="linear-gradient(135deg, #EC4899 0%, #F472B6 100%)"
+              value={stats.transactionCount.toString()}
+              icon={Receipt}
+              color="info"
             />
           </Grid>
         </Grid>
 
-        <Grid container spacing={3}>
-          {/* Gráfico de Tendência */}
+        <Grid container spacing={3} mb={4}>
           <Grid item xs={12} lg={8}>
-            <Paper sx={{ p: 3, height: '400px' }}>
-              <Typography variant="h6" gutterBottom>
-                Tendência dos Últimos 6 Meses
+            <Paper sx={{ p: 3, height: '100%', minHeight: 400 }}>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Tendência Mensal
               </Typography>
               {trendChartData ? (
-                <Box sx={{ height: '320px' }}>
-                  <Line 
-                    data={trendChartData} 
-                    options={lineChartOptions}
-                  />
+                <Box sx={{ height: 320 }}>
+                  <Line data={trendChartData} options={lineOptions} />
                 </Box>
               ) : (
-                <Box display="flex" justifyContent="center" alignItems="center" height="320px">
-                  <Typography color="textSecondary">
-                    Sem dados suficientes para exibir o gráfico
-                  </Typography>
-                </Box>
+                <EmptyState 
+                  icon={Receipt}
+                  title="Sem dados de tendência" 
+                  message="Adicione mais transações para visualizar a tendência" 
+                />
               )}
             </Paper>
           </Grid>
 
-          {/* Gráfico de Despesas por Categoria */}
           <Grid item xs={12} lg={4}>
-            <Paper sx={{ p: 3, height: '400px' }}>
-              <Typography variant="h6" gutterBottom>
+            <Paper sx={{ p: 3, height: '100%', minHeight: 400 }}>
+              <Typography variant="h6" fontWeight={600} mb={2}>
                 Despesas por Categoria
               </Typography>
               {expenseChartData ? (
-                <Box sx={{ height: '320px', display: 'flex', justifyContent: 'center' }}>
-                  <Doughnut 
-                    data={expenseChartData}
-                    options={doughnutChartOptions}
-                  />
+                <Box sx={{ height: 320 }}>
+                  <Doughnut data={expenseChartData} options={doughnutOptions} />
                 </Box>
               ) : (
-                <Box display="flex" justifyContent="center" alignItems="center" height="320px">
-                  <Typography color="textSecondary">
-                    Nenhuma despesa encontrada
-                  </Typography>
-                </Box>
-              )}
-            </Paper>
-          </Grid>
-
-          {/* Transações Recentes */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Transações Recentes
-              </Typography>
-              {recentTransactions?.length > 0 ? (
-                <Box>
-                  {recentTransactions.slice(0, 5).map((transaction) => (
-                    <Box
-                      key={transaction.id}
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      py={1}
-                      borderBottom="1px solid #eee"
-                    >
-                      <Box>
-                        <Typography variant="body1">
-                          {transaction.description}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                          {transaction.category.name} • {formatDate(transaction.date)}
-                        </Typography>
-                      </Box>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Chip
-                          label={transaction.type === 'income' ? 'Receita' : 'Despesa'}
-                          color={transaction.type === 'income' ? 'success' : 'error'}
-                          size="small"
-                        />
-                        <Typography
-                          variant="h6"
-                          color={getColorByType(transaction.type)}
-                        >
-                          {transaction.type === 'income' ? '+' : '-'}
-                          {formatCurrency(transaction.amount)}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              ) : (
-                <Typography color="textSecondary">
-                  Nenhuma transação encontrada
-                </Typography>
+                <EmptyState 
+                  icon={Receipt}
+                  title="Sem despesas" 
+                  message="Nenhuma despesa registrada ainda" 
+                />
               )}
             </Paper>
           </Grid>
         </Grid>
+
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" fontWeight={600} mb={3}>
+            Transações Recentes
+          </Typography>
+          {recentTransactions && recentTransactions.length > 0 ? (
+            <Box>
+              {recentTransactions.map((transaction, index) => (
+                <motion.div
+                  key={transaction.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      p: 2,
+                      mb: 1,
+                      borderRadius: 2,
+                      bgcolor: 'background.default',
+                      '&:hover': {
+                        bgcolor: 'action.hover'
+                      }
+                    }}
+                  >
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: getColorByType(transaction.type)
+                        }}
+                      />
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {transaction.description}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {transaction.category?.name || 'Sem categoria'} • {formatDate(transaction.date)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Chip
+                        label={transaction.type === 'income' ? 'Receita' : 'Despesa'}
+                        size="small"
+                        color={transaction.type === 'income' ? 'success' : 'error'}
+                        sx={{ fontWeight: 600 }}
+                      />
+                      <Typography
+                        variant="h6"
+                        fontWeight={700}
+                        color={transaction.type === 'income' ? 'success.main' : 'error.main'}
+                      >
+                        {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </motion.div>
+              ))}
+            </Box>
+          ) : (
+            <EmptyState
+              icon={Receipt}
+              title="Nenhuma transação recente"
+              message="Suas transações mais recentes aparecerão aqui"
+            />
+          )}
+        </Paper>
       </Box>
     </motion.div>
   );
