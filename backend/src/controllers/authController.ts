@@ -1,7 +1,8 @@
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const { PrismaClient } = require('@prisma/client');
-const Joi = require('joi');
+import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client';
+import Joi from 'joi';
 
 const prisma = new PrismaClient();
 
@@ -16,15 +17,22 @@ const loginSchema = Joi.object({
   password: Joi.string().required()
 });
 
+interface DefaultCategory {
+  name: string;
+  type: 'income' | 'expense';
+  color: string;
+}
+
 class AuthController {
-  async register(req, res) {
+  async register(req: Request, res: Response): Promise<void> {
     try {
       const { error, value } = registerSchema.validate(req.body);
       if (error) {
-        return res.status(400).json({ 
+        res.status(400).json({ 
           error: 'Dados inválidos', 
           details: error.details[0].message 
         });
+        return;
       }
 
       const { name, email, password } = value;
@@ -34,7 +42,8 @@ class AuthController {
       });
 
       if (existingUser) {
-        return res.status(409).json({ error: 'Usuário já existe com este email' });
+        res.status(409).json({ error: 'Usuário já existe com este email' });
+        return;
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
@@ -52,11 +61,11 @@ class AuthController {
         }
       });
 
-      await authController.createDefaultCategories(user.id);
+      await this.createDefaultCategories(user.id);
 
       const token = jwt.sign(
         { userId: user.id, email: user.email },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET!,
         { expiresIn: '30d' }
       );
 
@@ -72,14 +81,15 @@ class AuthController {
     }
   }
 
-  async login(req, res) {
+  async login(req: Request, res: Response): Promise<void> {
     try {
       const { error, value } = loginSchema.validate(req.body);
       if (error) {
-        return res.status(400).json({ 
+        res.status(400).json({ 
           error: 'Dados inválidos', 
           details: error.details[0].message 
         });
+        return;
       }
 
       const { email, password } = value;
@@ -89,16 +99,19 @@ class AuthController {
       });
 
       if (!user) {
-        return res.status(401).json({ error: 'Credenciais inválidas' });
+        res.status(401).json({ error: 'Credenciais inválidas' });
+        return;
       }
 
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
-        return res.status(401).json({ error: 'Credenciais inválidas' });
+        res.status(401).json({ error: 'Credenciais inválidas' });
+        return;
       }
+
       const token = jwt.sign(
         { userId: user.id, email: user.email },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET!,
         { expiresIn: '30d' }
       );
 
@@ -118,7 +131,7 @@ class AuthController {
     }
   }
 
-  async getProfile(req, res) {
+  async getProfile(req: Request, res: Response): Promise<void> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: req.userId },
@@ -138,8 +151,8 @@ class AuthController {
     }
   }
 
-  async createDefaultCategories(userId) {
-    const defaultCategories = [
+  private async createDefaultCategories(userId: string): Promise<void> {
+    const defaultCategories: DefaultCategory[] = [
       { name: 'Salário', type: 'income', color: '#4CAF50' },
       { name: 'Freelance', type: 'income', color: '#8BC34A' },
       { name: 'Investimentos', type: 'income', color: '#CDDC39' },
@@ -162,5 +175,4 @@ class AuthController {
   }
 }
 
-const authController = new AuthController();
-module.exports = authController;
+export default new AuthController();

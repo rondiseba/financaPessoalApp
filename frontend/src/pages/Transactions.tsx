@@ -256,7 +256,7 @@ const Transactions: React.FC = () => {
   const loadCategories = async (): Promise<void> => {
     try {
       const response = await categoryService.getAll();
-      setCategories(response);
+      setCategories(response.categories || []);
     } catch (err: any) {
       console.error('Erro ao carregar categorias:', err);
     }

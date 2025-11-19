@@ -1,15 +1,16 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const path = require('path');
-require('dotenv').config();
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
 
-const authRoutes = require('./routes/auth');
-const categoryRoutes = require('./routes/categories');
-const transactionRoutes = require('./routes/transactions');
-const reportRoutes = require('./routes/reports');
-const dashboardRoutes = require('./routes/dashboard');
-const recurringRoutes = require('./routes/recurring');
+dotenv.config();
+
+import authRoutes from './routes/auth';
+import categoryRoutes from './routes/categories';
+import transactionRoutes from './routes/transactions';
+import dashboardRoutes from './routes/dashboard';
+import reportRoutes from './routes/reports';
+import recurringRoutes from './routes/recurring';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,7 +30,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/recurring', recurringRoutes);
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ 
     status: 'OK', 
     message: 'Controle de Gastos API funcionando!',
@@ -37,7 +38,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.use((err, req, res, next) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ 
     error: 'Algo deu errado!',
@@ -45,7 +46,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.use('*', (req, res) => {
+app.use('*', (_req: Request, res: Response) => {
   res.status(404).json({ error: 'Rota não encontrada' });
 });
 
@@ -57,4 +58,4 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-module.exports = app;
+export default app;

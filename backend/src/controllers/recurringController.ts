@@ -1,11 +1,17 @@
-const { PrismaClient } = require('@prisma/client');
-const moment = require('moment');
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import moment from 'moment';
 
 const prisma = new PrismaClient();
 
+interface QueryParams {
+  month?: string;
+  year?: string;
+}
+
 class RecurringController {
   // Listar gastos fixos
-  async list(req, res) {
+  async list(req: Request, res: Response): Promise<void> {
     try {
       const transactions = await prisma.transaction.findMany({
         where: {
@@ -29,21 +35,23 @@ class RecurringController {
   }
 
   // Criar gasto fixo
-  async create(req, res) {
+  async create(req: Request, res: Response): Promise<void> {
     try {
       const { description, amount, categoryId, recurringDay, type } = req.body;
 
       // Validações
       if (!description || !amount || !categoryId || !recurringDay) {
-        return res.status(400).json({ 
-          error: 'Descrição, valor, categoria e dia são obrigatórios' 
+        res.status(400).json({
+          error: 'Descrição, valor, categoria e dia são obrigatórios'
         });
+        return;
       }
 
       if (recurringDay < 1 || recurringDay > 31) {
-        return res.status(400).json({ 
-          error: 'Dia deve ser entre 1 e 31' 
+        res.status(400).json({
+          error: 'Dia deve ser entre 1 e 31'
         });
+        return;
       }
 
       // Verificar se a categoria existe
@@ -52,7 +60,8 @@ class RecurringController {
       });
 
       if (!category) {
-        return res.status(404).json({ error: 'Categoria não encontrada' });
+        res.status(404).json({ error: 'Categoria não encontrada' });
+        return;
       }
 
       // Criar a primeira transação com data atual
@@ -65,7 +74,7 @@ class RecurringController {
           type: type || 'expense',
           date: currentDate,
           categoryId,
-          userId: req.userId,
+          userId: req.userId!,
           isRecurring: true,
           recurringDay: parseInt(recurringDay)
         },
@@ -82,7 +91,7 @@ class RecurringController {
   }
 
   // Atualizar gasto fixo
-  async update(req, res) {
+  async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const { description, amount, categoryId, recurringDay } = req.body;
@@ -97,7 +106,8 @@ class RecurringController {
       });
 
       if (!existingTransaction) {
-        return res.status(404).json({ error: 'Gasto fixo não encontrado' });
+        res.status(404).json({ error: 'Gasto fixo não encontrado' });
+        return;
       }
 
       // Atualizar
@@ -122,7 +132,7 @@ class RecurringController {
   }
 
   // Deletar gasto fixo
-  async delete(req, res) {
+  async delete(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -136,7 +146,8 @@ class RecurringController {
       });
 
       if (!transaction) {
-        return res.status(404).json({ error: 'Gasto fixo não encontrado' });
+        res.status(404).json({ error: 'Gasto fixo não encontrado' });
+        return;
       }
 
       await prisma.transaction.delete({
@@ -151,7 +162,7 @@ class RecurringController {
   }
 
   // Registrar pagamento mensal de um gasto fixo
-  async registerPayment(req, res) {
+  async registerPayment(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const { amount, date } = req.body;
@@ -169,7 +180,8 @@ class RecurringController {
       });
 
       if (!recurringTransaction) {
-        return res.status(404).json({ error: 'Gasto fixo não encontrado' });
+        res.status(404).json({ error: 'Gasto fixo não encontrado' });
+        return;
       }
 
       // Criar nova transação para o mês atual
@@ -182,7 +194,7 @@ class RecurringController {
           type: recurringTransaction.type,
           date: paymentDate,
           categoryId: recurringTransaction.categoryId,
-          userId: req.userId,
+          userId: req.userId!,
           isRecurring: false // Pagamento não é recorrente
         },
         include: {
@@ -198,10 +210,10 @@ class RecurringController {
   }
 
   // Verificar pagamentos pendentes do mês
-  async getPending(req, res) {
+  async getPending(req: Request, res: Response): Promise<void> {
     try {
-      const { month, year } = req.query;
-      
+      const { month, year } = req.query as QueryParams;
+
       const currentMonth = month ? parseInt(month) : moment().month() + 1;
       const currentYear = year ? parseInt(year) : moment().year();
 
@@ -242,7 +254,7 @@ class RecurringController {
         if (!payment) {
           pending.push({
             ...recurring,
-            dueDate: moment().year(currentYear).month(currentMonth - 1).date(recurring.recurringDay).toDate()
+            dueDate: moment().year(currentYear).month(currentMonth - 1).date(recurring.recurringDay!).toDate()
           });
         }
       }
@@ -255,4 +267,4 @@ class RecurringController {
   }
 }
 
-module.exports = new RecurringController();
+export default new RecurringController();

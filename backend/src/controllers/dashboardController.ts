@@ -1,15 +1,20 @@
-const { PrismaClient } = require('@prisma/client');
-const moment = require('moment');
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import moment from 'moment';
 
 const prisma = new PrismaClient();
 
+interface QueryParams {
+  period?: string;
+}
+
 class DashboardController {
-  async getDashboardData(req, res) {
+  async getDashboardData(req: Request, res: Response): Promise<void> {
     try {
-      const { period = 'current' } = req.query;
-      
-      let startDate, endDate;
-      
+      const { period = 'current' } = req.query as QueryParams;
+
+      let startDate: Date, endDate: Date;
+
       switch (period) {
         case 'current':
           startDate = moment().startOf('month').toDate();
@@ -35,11 +40,11 @@ class DashboardController {
         recentTransactions,
         topCategories
       ] = await Promise.all([
-        dashboardController.getTotalStats(req.userId, startDate, endDate),
-        dashboardController.getCategoryStats(req.userId, startDate, endDate),
-        dashboardController.getMonthlyTrend(req.userId),
-        dashboardController.getRecentTransactions(req.userId),
-        dashboardController.getTopCategories(req.userId, startDate, endDate)
+        dashboardController.getTotalStats(req.userId!, startDate, endDate),
+        dashboardController.getCategoryStats(req.userId!, startDate, endDate),
+        dashboardController.getMonthlyTrend(req.userId!),
+        dashboardController.getRecentTransactions(req.userId!),
+        dashboardController.getTopCategories(req.userId!, startDate, endDate)
       ]);
 
       // Estrutura de resposta conforme esperado pelo frontend
@@ -73,7 +78,7 @@ class DashboardController {
     }
   }
 
-  async getTotalStats(userId, startDate, endDate) {
+  async getTotalStats(userId: string, startDate: Date, endDate: Date) {
     const [income, expense, transactionCount] = await Promise.all([
       prisma.transaction.aggregate({
         where: {
@@ -112,7 +117,7 @@ class DashboardController {
     };
   }
 
-  async getCategoryStats(userId, startDate, endDate) {
+  async getCategoryStats(userId: string, startDate: Date, endDate: Date) {
     const [expensesByCategory, incomesByCategory] = await Promise.all([
       prisma.transaction.groupBy({
         by: ['categoryId'],
@@ -147,10 +152,10 @@ class DashboardController {
       select: { id: true, name: true, color: true, type: true }
     });
 
-    const categoryMap = categories.reduce((acc, cat) => {
+    const categoryMap: Record<string, any> = categories.reduce((acc, cat) => {
       acc[cat.id] = cat;
       return acc;
-    }, {});
+    }, {} as Record<string, any>);
 
     return {
       expenses: expensesByCategory.map(exp => ({
@@ -164,7 +169,7 @@ class DashboardController {
     };
   }
 
-  async getMonthlyTrend(userId, months = 6) {
+  async getMonthlyTrend(userId: string, months: number = 6) {
     const endDate = moment().endOf('month').toDate();
     const startDate = moment().subtract(months - 1, 'months').startOf('month').toDate();
 
@@ -180,8 +185,8 @@ class DashboardController {
       }
     });
 
-    const monthlyData = {};
-    
+    const monthlyData: Record<string, any> = {};
+
     for (let i = 0; i < months; i++) {
       const month = moment().subtract(i, 'months');
       const key = month.format('YYYY-MM');
@@ -213,7 +218,7 @@ class DashboardController {
       .map(key => monthlyData[key]);
   }
 
-  async getRecentTransactions(userId, limit = 10) {
+  async getRecentTransactions(userId: string, limit: number = 10) {
     return await prisma.transaction.findMany({
       where: { userId },
       include: {
@@ -232,7 +237,7 @@ class DashboardController {
     });
   }
 
-  async getTopCategories(userId, startDate, endDate, limit = 5) {
+  async getTopCategories(userId: string, startDate: Date, endDate: Date, limit: number = 5) {
     const topExpenseCategories = await prisma.transaction.groupBy({
       by: ['categoryId'],
       where: {
@@ -256,10 +261,10 @@ class DashboardController {
       select: { id: true, name: true, color: true }
     });
 
-    const categoryMap = categories.reduce((acc, cat) => {
+    const categoryMap: Record<string, any> = categories.reduce((acc, cat) => {
       acc[cat.id] = cat;
       return acc;
-    }, {});
+    }, {} as Record<string, any>);
 
     return topExpenseCategories.map(cat => ({
       ...cat,
@@ -267,7 +272,7 @@ class DashboardController {
     }));
   }
 
-  getPeriodLabel(period) {
+  getPeriodLabel(period: string): string {
     switch (period) {
       case 'current':
         return 'Mês Atual';
@@ -280,7 +285,7 @@ class DashboardController {
     }
   }
 
-  async getGoalsProgress(req, res) {
+  async getGoalsProgress(req: Request, res: Response): Promise<void> {
     try {
       const currentMonth = moment().month() + 1;
       const currentYear = moment().year();
@@ -294,7 +299,7 @@ class DashboardController {
       });
 
       const categoryIds = budgets.map(b => b.categoryId);
-      
+
       const [categories, actualSpending] = await Promise.all([
         prisma.category.findMany({
           where: { id: { in: categoryIds } },
@@ -315,15 +320,15 @@ class DashboardController {
         })
       ]);
 
-      const categoryMap = categories.reduce((acc, cat) => {
+      const categoryMap: Record<string, any> = categories.reduce((acc, cat) => {
         acc[cat.id] = cat;
         return acc;
-      }, {});
+      }, {} as Record<string, any>);
 
-      const spendingMap = actualSpending.reduce((acc, spending) => {
-        acc[spending.categoryId] = spending._sum.amount;
+      const spendingMap: Record<string, number> = actualSpending.reduce((acc, spending) => {
+        acc[spending.categoryId] = spending._sum.amount || 0;
         return acc;
-      }, {});
+      }, {} as Record<string, number>);
 
       const goalsProgress = budgets.map(budget => {
         const category = categoryMap[budget.categoryId];
@@ -351,4 +356,4 @@ class DashboardController {
 }
 
 const dashboardController = new DashboardController();
-module.exports = dashboardController;
+export default dashboardController;

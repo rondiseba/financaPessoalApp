@@ -1,7 +1,9 @@
-const { PrismaClient } = require('@prisma/client');
-const Joi = require('joi');
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import Joi from 'joi';
 
 const prisma = new PrismaClient();
+
 const transactionSchema = Joi.object({
   description: Joi.string().min(1).max(255).required(),
   amount: Joi.number().positive().required(),
@@ -22,22 +24,35 @@ const updateTransactionSchema = Joi.object({
   recurringDay: Joi.number().integer().min(1).max(31).optional().allow(null)
 });
 
+interface QueryParams {
+  page?: string;
+  limit?: string;
+  type?: string;
+  categoryId?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  month?: string;
+  year?: string;
+  months?: string;
+}
+
 class TransactionController {
-  async getAll(req, res) {
+  async getAll(req: Request, res: Response): Promise<void> {
     try {
-      const { 
-        page = 1, 
-        limit = 20, 
-        type, 
-        categoryId, 
-        startDate, 
+      const {
+        page = '1',
+        limit = '20',
+        type,
+        categoryId,
+        startDate,
         endDate,
-        search 
-      } = req.query;
+        search
+      } = req.query as QueryParams;
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
-      
-      const where = {
+
+      const where: any = {
         userId: req.userId
       };
 
@@ -104,7 +119,7 @@ class TransactionController {
     }
   }
 
-  async getById(req, res) {
+  async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -126,7 +141,8 @@ class TransactionController {
       });
 
       if (!transaction) {
-        return res.status(404).json({ error: 'Transação não encontrada' });
+        res.status(404).json({ error: 'Transação não encontrada' });
+        return;
       }
 
       res.json({ transaction });
@@ -137,14 +153,15 @@ class TransactionController {
     }
   }
 
-  async create(req, res) {
+  async create(req: Request, res: Response): Promise<void> {
     try {
       const { error, value } = transactionSchema.validate(req.body);
       if (error) {
-        return res.status(400).json({ 
-          error: 'Dados inválidos', 
-          details: error.details[0].message 
+        res.status(400).json({
+          error: 'Dados inválidos',
+          details: error.details[0].message
         });
+        return;
       }
 
       const { description, amount, type, date, categoryId, isRecurring, recurringDay } = value;
@@ -156,23 +173,25 @@ class TransactionController {
       });
 
       if (!category) {
-        return res.status(404).json({ error: 'Categoria não encontrada' });
+        res.status(404).json({ error: 'Categoria não encontrada' });
+        return;
       }
 
       if (category.type !== type) {
-        return res.status(400).json({ 
-          error: `Categoria selecionada é para ${category.type === 'income' ? 'receitas' : 'despesas'}, mas a transação é do tipo ${type === 'income' ? 'receita' : 'despesa'}` 
+        res.status(400).json({
+          error: `Categoria selecionada é para ${category.type === 'income' ? 'receitas' : 'despesas'}, mas a transação é do tipo ${type === 'income' ? 'receita' : 'despesa'}`
         });
+        return;
       }
 
       // Se for transação recorrente, define a data para o próximo vencimento
-      let transactionDate;
+      let transactionDate: Date;
       if (isRecurring && recurringDay) {
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth();
         transactionDate = new Date(year, month, recurringDay);
-        
+
         // Se a data já passou no mês atual, agenda para o próximo mês
         if (transactionDate < now) {
           transactionDate = new Date(year, month + 1, recurringDay);
@@ -188,7 +207,7 @@ class TransactionController {
           type,
           date: transactionDate,
           categoryId,
-          userId: req.userId,
+          userId: req.userId!,
           isRecurring: isRecurring || false,
           recurringDay: isRecurring ? recurringDay : null
         },
@@ -215,17 +234,19 @@ class TransactionController {
     }
   }
 
-  async update(req, res) {
+  async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
       const { error, value } = updateTransactionSchema.validate(req.body);
       if (error) {
-        return res.status(400).json({ 
-          error: 'Dados inválidos', 
-          details: error.details[0].message 
+        res.status(400).json({
+          error: 'Dados inválidos',
+          details: error.details[0].message
         });
+        return;
       }
+
       const existingTransaction = await prisma.transaction.findFirst({
         where: {
           id,
@@ -234,7 +255,8 @@ class TransactionController {
       });
 
       if (!existingTransaction) {
-        return res.status(404).json({ error: 'Transação não encontrada' });
+        res.status(404).json({ error: 'Transação não encontrada' });
+        return;
       }
 
       if (value.categoryId) {
@@ -246,18 +268,20 @@ class TransactionController {
         });
 
         if (!category) {
-          return res.status(404).json({ error: 'Categoria não encontrada' });
+          res.status(404).json({ error: 'Categoria não encontrada' });
+          return;
         }
 
         const transactionType = value.type || existingTransaction.type;
         if (category.type !== transactionType) {
-          return res.status(400).json({ 
-            error: `Categoria selecionada é para ${category.type === 'income' ? 'receitas' : 'despesas'}, mas a transação é do tipo ${transactionType === 'income' ? 'receita' : 'despesa'}` 
+          res.status(400).json({
+            error: `Categoria selecionada é para ${category.type === 'income' ? 'receitas' : 'despesas'}, mas a transação é do tipo ${transactionType === 'income' ? 'receita' : 'despesa'}`
           });
+          return;
         }
       }
 
-      const updateData = {
+      const updateData: any = {
         ...value
       };
 
@@ -295,7 +319,7 @@ class TransactionController {
     }
   }
 
-  async delete(req, res) {
+  async delete(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -307,7 +331,8 @@ class TransactionController {
       });
 
       if (!transaction) {
-        return res.status(404).json({ error: 'Transação não encontrada' });
+        res.status(404).json({ error: 'Transação não encontrada' });
+        return;
       }
 
       await prisma.transaction.delete({
@@ -324,14 +349,14 @@ class TransactionController {
     }
   }
 
-  async getStats(req, res) {
+  async getStats(req: Request, res: Response): Promise<void> {
     try {
-      const { month, year } = req.query;
-      
-      let startDate, endDate;
-      
+      const { month, year } = req.query as QueryParams;
+
+      let startDate: Date, endDate: Date;
+
       if (month && year) {
-        const date = new Date(year, month - 1, 1);
+        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
         startDate = new Date(date.getFullYear(), date.getMonth(), 1);
         endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
       } else {
@@ -424,10 +449,10 @@ class TransactionController {
         }
       });
 
-      const categoryMap = categories.reduce((acc, cat) => {
+      const categoryMap: Record<string, any> = categories.reduce((acc, cat) => {
         acc[cat.id] = cat;
         return acc;
-      }, {});
+      }, {} as Record<string, any>);
 
       const enrichedExpenses = expensesByCategory.map(expense => ({
         ...expense,
@@ -465,10 +490,10 @@ class TransactionController {
     }
   }
 
-  async getMonthlyTrend(req, res) {
+  async getMonthlyTrend(req: Request, res: Response): Promise<void> {
     try {
-      const { months = 12 } = req.query;
-      
+      const { months = '12' } = req.query as QueryParams;
+
       const now = new Date();
       const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       const startDate = new Date(now.getFullYear(), now.getMonth() - parseInt(months) + 1, 1);
@@ -485,9 +510,9 @@ class TransactionController {
         }
       });
 
-      const monthlyData = {};
+      const monthlyData: Record<string, any> = {};
       const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-      
+
       for (let i = 0; i < parseInt(months); i++) {
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const year = date.getFullYear();
@@ -538,4 +563,4 @@ class TransactionController {
 }
 
 const transactionController = new TransactionController();
-module.exports = transactionController;
+export default transactionController;

@@ -1,3 +1,5 @@
+// Service layer for API communication
+// Fixed: CategoryService now returns CategoryListResponse
 import api from './api';
 import {
   LoginResponse,
@@ -7,10 +9,12 @@ import {
   CreateCategoryDTO,
   UpdateCategoryDTO,
   CategoryStats,
+  CategoryListResponse,
   Transaction,
   CreateTransactionDTO,
   UpdateTransactionDTO,
   TransactionFilters,
+  TransactionListResponse,
   TransactionStatsResponse,
   TrendData,
   GenerateReportResponse,
@@ -84,9 +88,9 @@ export const categoryService = {
   /**
    * Get all categories, optionally filtered by type
    */
-  async getAll(type?: 'income' | 'expense'): Promise<Category[]> {
+  async getAll(type?: 'income' | 'expense'): Promise<CategoryListResponse> {
     const params = type ? { type } : {};
-    const response: AxiosResponse<Category[]> = await api.get('/categories', { params });
+    const response: AxiosResponse<CategoryListResponse> = await api.get('/categories', { params });
     return response.data;
   },
 
@@ -136,8 +140,8 @@ export const transactionService = {
   /**
    * Get all transactions with optional filters
    */
-  async getAll(params: TransactionFilters = {}): Promise<Transaction[]> {
-    const response: AxiosResponse<Transaction[]> = await api.get('/transactions', { params });
+  async getAll(params: TransactionFilters = {}): Promise<TransactionListResponse> {
+    const response: AxiosResponse<TransactionListResponse> = await api.get('/transactions', { params });
     return response.data;
   },
 

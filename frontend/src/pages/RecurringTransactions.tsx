@@ -238,12 +238,12 @@ const RecurringTransactions: React.FC = () => {
   const loadData = async (): Promise<void> => {
     try {
       setLoading(true);
-      const [recurringData, categoriesData] = await Promise.all([
+      const [recurringData, categoriesResponse] = await Promise.all([
         recurringService.list(),
         categoryService.getAll()
       ]);
       setRecurring(recurringData);
-      setCategories(categoriesData);
+      setCategories(categoriesResponse.categories || []);
     } catch (err: any) {
       toast.error('Erro ao carregar dados');
       console.error(err);

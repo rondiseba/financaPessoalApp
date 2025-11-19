@@ -1,9 +1,9 @@
-const { PrismaClient } = require('@prisma/client');
-const Joi = require('joi');
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import Joi from 'joi';
 
 const prisma = new PrismaClient();
 
-// Schemas de validação
 const categorySchema = Joi.object({
   name: Joi.string().min(1).max(100).required(),
   description: Joi.string().max(255).optional(),
@@ -19,15 +19,15 @@ const updateCategorySchema = Joi.object({
 });
 
 class CategoryController {
-  async getAll(req, res) {
+  async getAll(req: Request, res: Response): Promise<void> {
     try {
       const { type } = req.query;
       
-      const where = {
+      const where: any = {
         userId: req.userId
       };
 
-      if (type && ['income', 'expense'].includes(type)) {
+      if (type && ['income', 'expense'].includes(type as string)) {
         where.type = type;
       }
 
@@ -57,7 +57,7 @@ class CategoryController {
     }
   }
 
-  async getById(req, res) {
+  async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -76,7 +76,8 @@ class CategoryController {
       });
 
       if (!category) {
-        return res.status(404).json({ error: 'Categoria não encontrada' });
+        res.status(404).json({ error: 'Categoria não encontrada' });
+        return;
       }
 
       res.json({ category });
@@ -87,20 +88,19 @@ class CategoryController {
     }
   }
 
-  async create(req, res) {
+  async create(req: Request, res: Response): Promise<void> {
     try {
-      // Validar dados de entrada
       const { error, value } = categorySchema.validate(req.body);
       if (error) {
-        return res.status(400).json({ 
+        res.status(400).json({ 
           error: 'Dados inválidos', 
           details: error.details[0].message 
         });
+        return;
       }
 
       const { name, description, color, type } = value;
 
-      // Verificar se já existe categoria com mesmo nome para o usuário
       const existingCategory = await prisma.category.findFirst({
         where: {
           name: name.trim(),
@@ -110,9 +110,10 @@ class CategoryController {
       });
 
       if (existingCategory) {
-        return res.status(409).json({ 
+        res.status(409).json({ 
           error: `Já existe uma categoria ${type === 'income' ? 'de receita' : 'de despesa'} com este nome` 
         });
+        return;
       }
 
       const category = await prisma.category.create({
@@ -121,7 +122,7 @@ class CategoryController {
           description: description?.trim(),
           color,
           type,
-          userId: req.userId
+          userId: req.userId!
         }
       });
 
@@ -136,20 +137,19 @@ class CategoryController {
     }
   }
 
-  async update(req, res) {
+  async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
-      // Validar dados de entrada
       const { error, value } = updateCategorySchema.validate(req.body);
       if (error) {
-        return res.status(400).json({ 
+        res.status(400).json({ 
           error: 'Dados inválidos', 
           details: error.details[0].message 
         });
+        return;
       }
 
-      // Verificar se categoria existe e pertence ao usuário
       const existingCategory = await prisma.category.findFirst({
         where: {
           id,
@@ -158,10 +158,10 @@ class CategoryController {
       });
 
       if (!existingCategory) {
-        return res.status(404).json({ error: 'Categoria não encontrada' });
+        res.status(404).json({ error: 'Categoria não encontrada' });
+        return;
       }
 
-      // Se está alterando o nome, verificar duplicatas
       if (value.name && value.name !== existingCategory.name) {
         const duplicateCategory = await prisma.category.findFirst({
           where: {
@@ -173,9 +173,10 @@ class CategoryController {
         });
 
         if (duplicateCategory) {
-          return res.status(409).json({ 
+          res.status(409).json({ 
             error: 'Já existe uma categoria com este nome' 
           });
+          return;
         }
       }
 
@@ -199,11 +200,10 @@ class CategoryController {
     }
   }
 
-  async delete(req, res) {
+  async delete(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
-      // Verificar se categoria existe e pertence ao usuário
       const category = await prisma.category.findFirst({
         where: {
           id,
@@ -219,15 +219,16 @@ class CategoryController {
       });
 
       if (!category) {
-        return res.status(404).json({ error: 'Categoria não encontrada' });
+        res.status(404).json({ error: 'Categoria não encontrada' });
+        return;
       }
 
-      // Verificar se categoria tem transações associadas
       if (category._count.transactions > 0) {
-        return res.status(409).json({ 
+        res.status(409).json({ 
           error: 'Não é possível excluir categoria que possui transações associadas',
           transactionsCount: category._count.transactions
         });
+        return;
       }
 
       await prisma.category.delete({
@@ -244,7 +245,7 @@ class CategoryController {
     }
   }
 
-  async getStats(req, res) {
+  async getStats(req: Request, res: Response): Promise<void> {
     try {
       const stats = await prisma.category.groupBy({
         by: ['type'],
@@ -269,15 +270,15 @@ class CategoryController {
         }
       });
 
-      const categoryStats = stats.reduce((acc, stat) => {
+      const categoryStats: Record<string, number> = stats.reduce((acc, stat) => {
         acc[stat.type] = stat._count.id;
         return acc;
-      }, {});
+      }, {} as Record<string, number>);
 
-      const transactionsByCategory = totalTransactions.reduce((acc, category) => {
+      const transactionsByCategory: Record<string, number> = totalTransactions.reduce((acc, category) => {
         acc[category.type] = (acc[category.type] || 0) + category._count.transactions;
         return acc;
-      }, {});
+      }, {} as Record<string, number>);
 
       res.json({
         categoriesCount: categoryStats,
@@ -293,5 +294,4 @@ class CategoryController {
   }
 }
 
-const categoryController = new CategoryController();
-module.exports = categoryController;
+export default new CategoryController();

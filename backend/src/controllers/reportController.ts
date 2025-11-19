@@ -1,19 +1,26 @@
-const { PrismaClient } = require('@prisma/client');
-const ExcelJS = require('exceljs');
-const PDFDocument = require('pdfkit');
-const moment = require('moment');
-const path = require('path');
-const fs = require('fs');
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import ExcelJS from 'exceljs';
+import PDFDocument from 'pdfkit';
+import moment from 'moment';
+import path from 'path';
+import fs from 'fs';
 
 const prisma = new PrismaClient();
 
+interface QueryParams {
+  month?: string;
+  year?: string;
+}
+
 class ReportController {
-  async generateMonthlyExcel(req, res) {
+  async generateMonthlyExcel(req: Request, res: Response): Promise<void> {
     try {
-      const { month, year } = req.query;
-      
+      const { month, year } = req.query as QueryParams;
+
       if (!month || !year) {
-        return res.status(400).json({ error: 'Mês e ano são obrigatórios' });
+        res.status(400).json({ error: 'Mês e ano são obrigatórios' });
+        return;
       }
 
       const startDate = moment(`${year}-${month}-01`).startOf('month').toDate();
@@ -75,7 +82,7 @@ class ReportController {
       const totalIncome = transactions
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + t.amount, 0);
-      
+
       const totalExpense = transactions
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
@@ -107,7 +114,7 @@ class ReportController {
       });
 
       // Estilizar totais
-      const lastRow = worksheet.lastRow.number;
+      const lastRow = worksheet.lastRow?.number || worksheet.rowCount;
       for (let i = lastRow - 2; i <= lastRow; i++) {
         worksheet.getRow(i).font = { bold: true };
         if (i === lastRow) {
@@ -125,7 +132,7 @@ class ReportController {
       // Salvar arquivo com userId para isolar por usuário
       const fileName = `relatorio-${req.userId}-${month}-${year}.xlsx`;
       const filePath = path.join(__dirname, '../../reports', fileName);
-      
+
       // Criar diretório se não existir
       const reportsDir = path.join(__dirname, '../../reports');
       if (!fs.existsSync(reportsDir)) {
@@ -152,12 +159,13 @@ class ReportController {
     }
   }
 
-  async generateMonthlyPDF(req, res) {
+  async generateMonthlyPDF(req: Request, res: Response): Promise<void> {
     try {
-      const { month, year } = req.query;
-      
+      const { month, year } = req.query as QueryParams;
+
       if (!month || !year) {
-        return res.status(400).json({ error: 'Mês e ano são obrigatórios' });
+        res.status(400).json({ error: 'Mês e ano são obrigatórios' });
+        return;
       }
 
       const startDate = moment(`${year}-${month}-01`).startOf('month').toDate();
@@ -209,8 +217,8 @@ class ReportController {
       doc.moveDown();
 
       // Informações do usuário
-      doc.fontSize(12).text(`Usuário: ${user.name}`, 50, doc.y);
-      doc.text(`Email: ${user.email}`, 50, doc.y);
+      doc.fontSize(12).text(`Usuário: ${user?.name}`, 50, doc.y);
+      doc.text(`Email: ${user?.email}`, 50, doc.y);
       doc.text(`Gerado em: ${moment().format('DD/MM/YYYY HH:mm')}`, 50, doc.y);
       doc.moveDown();
 
@@ -218,7 +226,7 @@ class ReportController {
       const totalIncome = transactions
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + t.amount, 0);
-      
+
       const totalExpense = transactions
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
@@ -232,13 +240,13 @@ class ReportController {
       doc.text(`Total de Despesas: R$ ${totalExpense.toFixed(2).replace('.', ',')}`, 50, doc.y);
       doc.text(`Saldo: R$ ${balance.toFixed(2).replace('.', ',')}`, 50, doc.y, {
         color: balance >= 0 ? 'green' : 'red'
-      });
+      } as any);
       doc.moveDown();
 
       // Transações por categoria (Receitas)
       const incomeCategories = transactions
         .filter(t => t.type === 'income')
-        .reduce((acc, t) => {
+        .reduce((acc: Record<string, number>, t) => {
           const catName = t.category.name;
           acc[catName] = (acc[catName] || 0) + t.amount;
           return acc;
@@ -256,7 +264,7 @@ class ReportController {
       // Transações por categoria (Despesas)
       const expenseCategories = transactions
         .filter(t => t.type === 'expense')
-        .reduce((acc, t) => {
+        .reduce((acc: Record<string, number>, t) => {
           const catName = t.category.name;
           acc[catName] = (acc[catName] || 0) + t.amount;
           return acc;
@@ -296,8 +304,8 @@ class ReportController {
       doc.end();
 
       // Aguardar conclusão do arquivo
-      await new Promise((resolve) => {
-        stream.on('finish', resolve);
+      await new Promise<void>((resolve) => {
+        stream.on('finish', () => resolve());
       });
 
       res.json({
@@ -318,26 +326,27 @@ class ReportController {
     }
   }
 
-  async listReports(req, res) {
+  async listReports(req: Request, res: Response): Promise<void> {
     try {
       const reportsDir = path.join(__dirname, '../../reports');
-      
+
       if (!fs.existsSync(reportsDir)) {
-        return res.json({ reports: [] });
+        res.json({ reports: [] });
+        return;
       }
 
       const files = fs.readdirSync(reportsDir);
-      
+
       // Filtrar apenas relatórios do usuário atual
-      const userFiles = files.filter(file => file.includes(req.userId));
-      
+      const userFiles = files.filter(file => file.includes(req.userId!));
+
       const reports = userFiles.map(file => {
         const filePath = path.join(reportsDir, file);
         const stats = fs.statSync(filePath);
-        
+
         // Remover userId do nome exibido
         const displayName = file.replace(`-${req.userId}`, '');
-        
+
         return {
           fileName: file,
           displayName: displayName,
@@ -348,7 +357,7 @@ class ReportController {
         };
       });
 
-      reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       res.json({ reports });
 
@@ -358,18 +367,20 @@ class ReportController {
     }
   }
 
-  async deleteReport(req, res) {
+  async deleteReport(req: Request, res: Response): Promise<void> {
     try {
       const { fileName } = req.params;
       const filePath = path.join(__dirname, '../../reports', fileName);
 
       if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'Arquivo não encontrado' });
+        res.status(404).json({ error: 'Arquivo não encontrado' });
+        return;
       }
 
       // Verificar se o arquivo pertence ao usuário logado
-      if (!fileName.includes(req.userId)) {
-        return res.status(403).json({ error: 'Acesso negado' });
+      if (!fileName.includes(req.userId!)) {
+        res.status(403).json({ error: 'Acesso negado' });
+        return;
       }
 
       fs.unlinkSync(filePath);
@@ -382,18 +393,20 @@ class ReportController {
     }
   }
 
-  async downloadReport(req, res) {
+  async downloadReport(req: Request, res: Response): Promise<void> {
     try {
       const { fileName } = req.params;
       const filePath = path.join(__dirname, '../../reports', fileName);
 
       if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'Arquivo não encontrado' });
+        res.status(404).json({ error: 'Arquivo não encontrado' });
+        return;
       }
 
       // Verificar se o arquivo pertence ao usuário logado
-      if (!fileName.includes(req.userId)) {
-        return res.status(403).json({ error: 'Acesso negado' });
+      if (!fileName.includes(req.userId!)) {
+        res.status(403).json({ error: 'Acesso negado' });
+        return;
       }
 
       // Remover userId do nome do download
@@ -414,4 +427,4 @@ class ReportController {
 }
 
 const reportController = new ReportController();
-module.exports = reportController;
+export default reportController;
