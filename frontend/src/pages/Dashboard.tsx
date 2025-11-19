@@ -146,10 +146,19 @@ const Dashboard: React.FC = () => {
   }
 
   if (!dashboardData) {
-    return <EmptyState icon={Receipt} title="Nenhum dado encontrado" message="Adicione transações para visualizar seu dashboard" />;
+    return (
+      <Box sx={{ p: 3 }}>
+        <EmptyState 
+          icon={Receipt}
+          title="Nenhum dado encontrado" 
+          message="Adicione transações para visualizar seu dashboard" 
+        />
+      </Box>
+    );
   }
 
-  const { stats, recentTransactions } = dashboardData;
+  const stats = dashboardData.stats;
+  const recentTransactions = dashboardData.recentTransactions;
   const expenseChartData = getExpenseChartData();
   const trendChartData = getTrendChartData();
 
@@ -210,6 +219,30 @@ const Dashboard: React.FC = () => {
       }
     }
   };
+
+  if (loading) {
+    return <CustomLoader />;
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <EmptyState 
+          icon={Receipt}
+          title="Nenhum dado encontrado" 
+          message="Adicione transações para visualizar seu dashboard" 
+        />
+      </Box>
+    );
+  }
 
   return (
     <motion.div
