@@ -54,7 +54,7 @@ class DashboardController {
             color: exp.category?.color || '#999',
             totalAmount: exp._sum.amount || 0,
             transactionCount: exp._count.id || 0,
-            type: 'expense' as const
+            type: 'expense'
           })),
           ...categoryStats.incomes.map(inc => ({
             categoryId: inc.categoryId,
@@ -62,7 +62,7 @@ class DashboardController {
             color: inc.category?.color || '#999',
             totalAmount: inc._sum.amount || 0,
             transactionCount: inc._count.id || 0,
-            type: 'income' as const
+            type: 'income'
           }))
         ]
       });
