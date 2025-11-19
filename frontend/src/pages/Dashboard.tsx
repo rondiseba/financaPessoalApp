@@ -220,30 +220,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return <CustomLoader />;
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error}</Alert>
-      </Box>
-    );
-  }
-
-  if (!dashboardData) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <EmptyState 
-          icon={Receipt}
-          title="Nenhum dado encontrado" 
-          message="Adicione transações para visualizar seu dashboard" 
-        />
-      </Box>
-    );
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
