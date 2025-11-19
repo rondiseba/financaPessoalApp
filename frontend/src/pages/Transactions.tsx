@@ -230,8 +230,14 @@ const Transactions: React.FC = () => {
       }
 
       const response = await transactionService.getAll(params);
-      setTransactions(response);
-      setTotalItems(response.length);
+      console.log('Transactions API response:', response);
+      
+      // API retorna { transactions, pagination }
+      const transactionsData = response.transactions || [];
+      const paginationData = response.pagination || { totalItems: 0 };
+      
+      setTransactions(transactionsData);
+      setTotalItems(paginationData.totalItems);
 
     } catch (err: any) {
       const errorMessage = 'Erro ao carregar transações';

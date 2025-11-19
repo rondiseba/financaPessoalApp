@@ -41,9 +41,14 @@ export interface UpdateTransactionDTO extends Partial<CreateTransactionDTO> {
 
 export interface TransactionListResponse {
   transactions: Transaction[];
-  total: number;
-  page: number;
-  limit: number;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }
 
 export interface TransactionStatsResponse {
