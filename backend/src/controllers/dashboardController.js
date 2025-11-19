@@ -42,17 +42,29 @@ class DashboardController {
         dashboardController.getTopCategories(req.userId, startDate, endDate)
       ]);
 
+      // Estrutura de resposta conforme esperado pelo frontend
       res.json({
-        period: {
-          startDate,
-          endDate,
-          label: dashboardController.getPeriodLabel(period)
-        },
-        totalStats,
-        categoryStats,
-        monthlyTrend,
+        stats: totalStats,
         recentTransactions,
-        topCategories
+        monthlyTrend,
+        categoryBreakdown: [
+          ...categoryStats.expenses.map(exp => ({
+            categoryId: exp.categoryId,
+            categoryName: exp.category?.name || 'Sem categoria',
+            color: exp.category?.color || '#999',
+            totalAmount: exp._sum.amount || 0,
+            transactionCount: exp._count.id || 0,
+            type: 'expense' as const
+          })),
+          ...categoryStats.incomes.map(inc => ({
+            categoryId: inc.categoryId,
+            categoryName: inc.category?.name || 'Sem categoria',
+            color: inc.category?.color || '#999',
+            totalAmount: inc._sum.amount || 0,
+            transactionCount: inc._count.id || 0,
+            type: 'income' as const
+          }))
+        ]
       });
 
     } catch (error) {

@@ -521,9 +521,14 @@ class TransactionController {
 
       const trend = Object.keys(monthlyData)
         .sort()
-        .map(key => monthlyData[key]);
+        .map(key => ({
+          period: monthlyData[key].month,
+          income: monthlyData[key].income,
+          expense: monthlyData[key].expense,
+          balance: monthlyData[key].balance
+        }));
 
-      res.json({ trend });
+      res.json(trend);
 
     } catch (error) {
       console.error('Erro ao buscar tendência mensal:', error);

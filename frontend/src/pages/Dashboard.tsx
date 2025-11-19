@@ -71,6 +71,9 @@ const Dashboard: React.FC = () => {
         transactionService.getMonthlyTrend()
       ]);
 
+      console.log('Dashboard Data recebida:', dashData);
+      console.log('Trend Data recebida:', trendData);
+
       setDashboardData(dashData);
       setMonthlyTrend(trendData);
       toast.success('Dashboard atualizado!');
@@ -157,8 +160,15 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  const stats = dashboardData.stats;
-  const recentTransactions = dashboardData.recentTransactions;
+  // Valores padrão caso stats seja undefined
+  const stats = dashboardData.stats || {
+    totalIncome: 0,
+    totalExpense: 0,
+    balance: 0,
+    transactionCount: 0
+  };
+  
+  const recentTransactions = dashboardData.recentTransactions || [];
   const expenseChartData = getExpenseChartData();
   const trendChartData = getTrendChartData();
 
