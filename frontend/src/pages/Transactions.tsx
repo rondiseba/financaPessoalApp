@@ -230,7 +230,6 @@ const Transactions: React.FC = () => {
       }
 
       const response = await transactionService.getAll(params);
-      console.log('Transactions API response:', response);
       
       // API retorna { transactions, pagination }
       const transactionsData = response.transactions || [];

@@ -71,9 +71,6 @@ const Dashboard: React.FC = () => {
         transactionService.getMonthlyTrend()
       ]);
 
-      console.log('Dashboard Data recebida:', dashData);
-      console.log('Trend Data recebida:', trendData);
-
       setDashboardData(dashData);
       setMonthlyTrend(trendData);
       toast.success('Dashboard atualizado!');

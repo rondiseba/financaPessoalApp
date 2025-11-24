@@ -37,14 +37,12 @@ class DashboardController {
         totalStats,
         categoryStats,
         monthlyTrend,
-        recentTransactions,
-        topCategories
+        recentTransactions
       ] = await Promise.all([
         dashboardController.getTotalStats(req.userId!, startDate, endDate),
         dashboardController.getCategoryStats(req.userId!, startDate, endDate),
         dashboardController.getMonthlyTrend(req.userId!),
-        dashboardController.getRecentTransactions(req.userId!),
-        dashboardController.getTopCategories(req.userId!, startDate, endDate)
+        dashboardController.getRecentTransactions(req.userId!)
       ]);
 
       // Estrutura de resposta conforme esperado pelo frontend
